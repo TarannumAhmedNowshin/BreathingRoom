@@ -3,6 +3,8 @@
   if (!/\/room\/(index\.html)?$/.test(location.pathname)) return;
   var right = document.querySelector('.top-right');
   if (!right) return;
+  // The day overview already shows the full timeline, so the break room only shows what's next.
+  document.body.classList.add('in-site');
   var a = document.createElement('a');
   a.href = '../';
   a.className = 'btn ghost';

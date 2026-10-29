@@ -418,3 +418,6 @@ h1, h2, h3, .countdown { font-family: var(--f-display); }
   .row .bar.pill { display: none; }
   .row .chip { grid-column: 2; justify-self: start; margin-top: 0; }
 }
+
+/* Inside the site the overview shows the day, so the break room hides its own timeline. */
+.in-site #day-card { display: none; }

@@ -341,30 +341,6 @@ export default function App() {
         </ol>
       )}
 
-      {isMargin && ideaRequest() && (
-        <form className="claude" onSubmit={askClaude}>
-          <div>
-            <p className="title">Break ideas by Claude</p>
-            <p className="note" aria-live="polite">
-              {claude.msg || 'Optional. Claude rewrites each idea to fit the exact minutes you have, your energy and the Dublin weather. Your key stays in this browser.'}
-            </p>
-          </div>
-          <div className="claude-row">
-            <input
-              type="password"
-              aria-label="Claude API key"
-              placeholder="Claude API key (sk-ant-…)"
-              autoComplete="off"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <button type="submit" disabled={claude.busy || !apiKey.trim()}>
-              {claude.busy ? 'Writing…' : 'Write my ideas'}
-            </button>
-          </div>
-        </form>
-      )}
-
       {isMargin && withMargin.problems.length > 0 && (
         <section className="fix" aria-labelledby="fix-h">
           <h2 id="fix-h">Fix the day</h2>
@@ -454,6 +430,30 @@ export default function App() {
           </ul>
         </details>
       </section>
+
+      {ideaRequest() && (
+        <form className="claude" onSubmit={askClaude}>
+          <div>
+            <p className="title">Break ideas by Claude</p>
+            <p className="note" aria-live="polite">
+              {claude.msg || 'Optional. Claude rewrites each idea to fit the exact minutes you have, your energy and the Dublin weather. Your key stays in this browser.'}
+            </p>
+          </div>
+          <div className="claude-row">
+            <input
+              type="password"
+              aria-label="Claude API key"
+              placeholder="Claude API key (sk-ant-…)"
+              autoComplete="off"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <button type="submit" disabled={claude.busy || !apiKey.trim()}>
+              {claude.busy ? 'Writing…' : 'Write my ideas'}
+            </button>
+          </div>
+        </form>
+      )}
 
       <footer className="source">
         <span>Showing: {source}</span>
