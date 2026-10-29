@@ -11,15 +11,15 @@ import {
   toHHMM,
   toMin,
 } from './plan'
-import { ROOM_URL, connectCalendarLink, dayFromRoom, forgetCalendarLink, ideaRequest, importCalendar, savedCalendarLink, takenToday } from './room'
+import { ROOM_URL, connectCalendarLink, dayFromRoom, forgetCalendarLink, ideaRequest, importCalendar, savedCalendarLink, takenToday, moodToday, setMoodToday, workday, type Mood } from './room'
 import { draftRequest, geminiAvailable } from './gemini'
-import { saveApiKey, savedApiKey, storedIdeas, writeIdeas } from './ideas'
+import { planFreeTime, saveApiKey, savedApiKey, storedDayPlan, storedIdeas, writeIdeas, type FreeBlock } from './ideas'
 
 type Mode = 'booked' | 'margin'
 
 interface Row {
   id: string
-  kind: 'meeting' | BreakType
+  kind: 'meeting' | 'claude' | BreakType
   start: number
   end: number
   title: string
@@ -155,20 +155,42 @@ export default function App() {
     msg: Object.keys(storedIdeas()).length ? 'Today\'s break ideas were written by Claude.' : '',
   }))
 
-  async function askClaude(e: React.FormEvent) {
-    e.preventDefault()
+  const [mood, setMood] = useState<Mood | null>(() => moodToday())
+  const [free, setFree] = useState<FreeBlock[]>(() => storedDayPlan()?.blocks ?? [])
+
+  // Claude plans the free parts of the day for today's mood, and rewrites each break to fit.
+  async function runClaude(m: Mood | null = mood, key = apiKey.trim()) {
     const req = ideaRequest()
-    if (!req || !apiKey.trim()) return
-    saveApiKey(apiKey.trim())
-    setClaude({ busy: true, msg: 'Claude is writing ideas that fit each break…' })
+    if (!req || !key) return
+    saveApiKey(key)
+    setClaude({ busy: true, msg: 'Claude is planning your free time…' })
     try {
-      const n = await writeIdeas(apiKey.trim(), req.breaks, req.meetings, req.energy)
+      const { dayStart, dayEnd } = workday()
+      const [blocks] = await Promise.all([
+        planFreeTime(key, req.meetings, req.breaks, m ?? 'ok', dayStart, dayEnd),
+        writeIdeas(key, req.breaks, req.meetings, m ?? req.energy),
+      ])
       const fromRoom = dayFromRoom()
       if (fromRoom) setDay(fromRoom.day)
-      setClaude({ busy: false, msg: `Claude wrote ${plural(n, 'idea')}. The break room will use them too.` })
+      setFree(blocks)
+      setMode('margin')
+      setClaude({ busy: false, msg: blocks.length ? `Claude planned ${plural(blocks.length, 'block')} in your free time${m ? ` for a ${m === 'ok' ? 'normal' : m} day` : ''}.` : 'No free time left to plan today.' })
     } catch (err) {
       setClaude({ busy: false, msg: (err as Error).message })
     }
+  }
+
+  async function askClaude(e: React.FormEvent) {
+    e.preventDefault()
+    await runClaude()
+  }
+
+  function pickMood(m: Mood) {
+    setMood(m)
+    setMoodToday(m)
+    const fromRoom = dayFromRoom()
+    if (fromRoom) setDay(fromRoom.day)
+    if (ideaRequest() && apiKey.trim()) runClaude(m)
   }
 
   const [link, setLink] = useState(() => savedCalendarLink())
@@ -185,6 +207,7 @@ export default function App() {
       setError(found ? null : 'Your calendar has no meetings today.')
       setLinked(true)
       setMode('margin')
+      if (apiKey.trim()) runClaude()
     } catch (e) {
       setError(`Couldn't load your calendar. ${(e as Error).message}`)
     } finally {
@@ -245,7 +268,10 @@ export default function App() {
   const booked = summarise({ ...day, plan: [] })
   const withMargin = summarise(day)
   const isMargin = mode === 'margin'
-  const rows = buildRows(day, isMargin)
+  const rows = [
+    ...buildRows(day, isMargin),
+    ...free.map((f) => ({ id: `c-${f.start}`, kind: 'claude' as const, start: toMin(f.start), end: toMin(f.end), title: f.title, note: f.why, pressure: 0 })),
+  ].sort((a, b) => a.start - b.start || a.end - b.end)
 
   const range = (p: Stretch) => `${toHHMM(p.start)} to ${toHHMM(p.end)}`
 
@@ -298,6 +324,26 @@ export default function App() {
         <span className="thumb" aria-hidden="true" />
       </div>
 
+      <section className="mood" aria-labelledby="mood-h">
+        <p id="mood-h" className="mood-q">How are you feeling today?</p>
+        <div className="mood-row" role="group" aria-labelledby="mood-h">
+          {(['low', 'ok', 'good'] as Mood[]).map((m) => (
+            <button key={m} type="button" aria-pressed={mood === m} disabled={claude.busy} onClick={() => pickMood(m)}>
+              {m === 'low' ? 'Low' : m === 'ok' ? 'Okay' : 'Good'}
+            </button>
+          ))}
+        </div>
+        <p className="mood-note" aria-live="polite">
+          {claude.busy
+            ? claude.msg
+            : !ideaRequest()
+              ? 'Connect your calendar below, then Claude plans your free time around how you feel.'
+              : !apiKey.trim()
+                ? 'Add your Claude key at the bottom of the page, and Claude plans your free time for you.'
+                : claude.msg || 'Pick one and Claude plans the empty parts of your day to match.'}
+        </p>
+      </section>
+
       {rows.length > 0 && (
         <ol className="day" aria-label="Today">
           {rows.map((r, i) => {
@@ -322,7 +368,14 @@ export default function App() {
                   <div className="time">
                     <span>{toHHMM(r.start)}</span>
                   </div>
-                  {isRest ? (
+                  {r.kind === 'claude' ? (
+                    <div className="block claude-block">
+                      <p className="title">{r.title}</p>
+                      <p className="note">
+                        {toHHMM(r.start)}–{toHHMM(r.end)} · {r.note}
+                      </p>
+                    </div>
+                  ) : isRest ? (
                     <div className={`block rest rest-${r.kind}`}>
                       <Icon kind={r.kind as BreakType} />
                       <div>
@@ -345,30 +398,6 @@ export default function App() {
             )
           })}
         </ol>
-      )}
-
-      {isMargin && ideaRequest() && (
-        <form className="claude" onSubmit={askClaude}>
-          <div>
-            <p className="title">Break ideas by Claude</p>
-            <p className="note" aria-live="polite">
-              {claude.msg || 'Optional. Claude rewrites each idea to fit the exact minutes you have, your energy and the Dublin weather. Your key stays in this browser.'}
-            </p>
-          </div>
-          <div className="claude-row">
-            <input
-              type="password"
-              aria-label="Claude API key"
-              placeholder="Claude API key (sk-ant-…)"
-              autoComplete="off"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <button type="submit" disabled={claude.busy || !apiKey.trim()}>
-              {claude.busy ? 'Writing…' : 'Write my ideas'}
-            </button>
-          </div>
-        </form>
       )}
 
       {isMargin && withMargin.problems.length > 0 && (
@@ -474,6 +503,30 @@ export default function App() {
           </ul>
         </details>
       </section>
+
+      {ideaRequest() && (
+        <form className="claude" onSubmit={askClaude}>
+          <div>
+            <p className="title">Break ideas by Claude</p>
+            <p className="note" aria-live="polite">
+              {claude.msg || 'Optional. Claude rewrites each idea to fit the exact minutes you have, your energy and the Dublin weather. Your key stays in this browser.'}
+            </p>
+          </div>
+          <div className="claude-row">
+            <input
+              type="password"
+              aria-label="Claude API key"
+              placeholder="Claude API key (sk-ant-…)"
+              autoComplete="off"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <button type="submit" disabled={claude.busy || !apiKey.trim()}>
+              {claude.busy ? 'Writing…' : 'Write my ideas'}
+            </button>
+          </div>
+        </form>
+      )}
 
       <footer className="source">
         <span>Showing: {source}</span>

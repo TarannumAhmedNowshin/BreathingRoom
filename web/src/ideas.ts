@@ -82,3 +82,89 @@ Reply with ONLY JSON: {"<id>": "<line>", ...}`
   try { localStorage.setItem(IDEAS_KEY, JSON.stringify({ date: todayKey(), ideas } satisfies Stored)) } catch { /* ignore */ }
   return Object.keys(ideas).length
 }
+
+// ---- Claude plans the free parts of the day, based on today's mood ----
+export const DAYPLAN_KEY = 'breathing-room:dayplan'
+export interface FreeBlock { start: string; end: string; title: string; why: string }
+interface StoredPlan { date: string; mood: string; blocks: FreeBlock[] }
+
+const toM = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+const toT = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+
+export function storedDayPlan(): StoredPlan | null {
+  try {
+    const s = JSON.parse(localStorage.getItem(DAYPLAN_KEY) || 'null') as StoredPlan | null
+    return s && s.date === todayKey() ? s : null
+  } catch {
+    return null
+  }
+}
+
+// Free gaps of 20+ minutes in the workday, after meetings and planned breaks.
+export function freeGaps(meetings: IdeaMeeting[], breaks: IdeaBreak[], dayStart: string, dayEnd: string) {
+  const busy = [
+    ...meetings.map((m) => [toM(m.start), toM(m.end)]),
+    ...breaks.map((b) => [toM(b.start), toM(b.start) + b.minutes]),
+  ].sort((a, b) => a[0] - b[0])
+  const gaps: [number, number][] = []
+  let t = toM(dayStart)
+  const end = toM(dayEnd)
+  for (const [s, e] of busy) {
+    if (s > t && Math.min(s, end) - t >= 20) gaps.push([t, Math.min(s, end)])
+    t = Math.max(t, e)
+  }
+  if (end - t >= 20) gaps.push([t, end])
+  return gaps
+}
+
+export async function planFreeTime(
+  apiKey: string, meetings: IdeaMeeting[], breaks: IdeaBreak[], mood: string, dayStart: string, dayEnd: string,
+): Promise<FreeBlock[]> {
+  const gaps = freeGaps(meetings, breaks, dayStart, dayEnd)
+  if (!gaps.length) {
+    localStorage.setItem(DAYPLAN_KEY, JSON.stringify({ date: todayKey(), mood, blocks: [] } satisfies StoredPlan))
+    return []
+  }
+  const prompt = `You help someone with compression burnout plan the FREE parts of today's workday.
+Mood today: ${mood} (low = tired, plan gentle and lighter; ok = normal; good = can take on focused work).
+Meetings (fixed): ${meetings.map((m) => `${m.start}-${m.end} ${m.title}`).join('; ') || 'none'}.
+Breaks already planned (fixed): ${breaks.map((b) => `${b.start} ${b.kind} ${b.minutes}min`).join('; ') || 'none'}.
+Free gaps you may fill: ${gaps.map(([a, b]) => `${toT(a)}-${toT(b)}`).join(', ')}.
+Rules: put blocks ONLY inside the free gaps, never overlapping each other. Leave some time unplanned, more on a low day.
+Block types: deep focus work, light admin/email, prep for the next meeting, a real rest, a walk, something personal.
+Low mood: shorter focus (max 45 min), more rest. Good mood: up to 90 min focus. No guilt, no productivity pressure.
+Each title max 40 chars, each "why" max 70 chars, plain words.
+Reply with ONLY JSON: [{"start":"HH:MM","end":"HH:MM","title":"...","why":"..."}]`
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ model: MODEL, max_tokens: 16000, output_config: { effort: 'low' }, messages: [{ role: 'user', content: prompt }] }),
+  })
+  if (res.status === 401) throw new Error('That API key was not accepted. Check it in the Claude Console.')
+  if (!res.ok) throw new Error(`Claude couldn't plan your day right now (${res.status}).`)
+  const data = await res.json()
+  if (data.stop_reason === 'refusal') throw new Error('Claude declined this request.')
+  const text: string = (data.content || []).filter((c: { type: string }) => c.type === 'text').map((c: { text: string }) => c.text).join('')
+  const raw = JSON.parse(text.slice(text.indexOf('['), text.lastIndexOf(']') + 1)) as unknown[]
+
+  // Keep only blocks that really sit inside a free gap and don't overlap each other.
+  const ok: FreeBlock[] = []
+  for (const r of Array.isArray(raw) ? raw : []) {
+    const b = r as Partial<FreeBlock>
+    if (typeof b.start !== 'string' || typeof b.end !== 'string' || !/^\d{2}:\d{2}$/.test(b.start) || !/^\d{2}:\d{2}$/.test(b.end)) continue
+    const s = toM(b.start), e = toM(b.end)
+    if (e - s < 10 || !gaps.some(([a, z]) => s >= a && e <= z)) continue
+    if (ok.some((o) => s < toM(o.end) && e > toM(o.start))) continue
+    ok.push({ start: b.start, end: b.end, title: String(b.title || 'Free time').slice(0, 40), why: String(b.why || '').slice(0, 70) })
+    if (ok.length >= 10) break
+  }
+  ok.sort((a, b) => toM(a.start) - toM(b.start))
+  localStorage.setItem(DAYPLAN_KEY, JSON.stringify({ date: todayKey(), mood, blocks: ok } satisfies StoredPlan))
+  return ok
+}
