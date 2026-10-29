@@ -21,6 +21,10 @@ Open the dashboard → **Settings → Calendar link**:
 - **Outlook:** Settings → Calendar → Shared calendars → Publish → copy the ICS link.
 - **Any calendar:** export an `.ics` file and upload it.
 
+## Try it without installing
+
+The break room also runs as a plain website: open `app/index.html`, or the live site at **https://tarannumahmednowshin.github.io/Margin/app/**. Import an `.ics` file, or use the example day.
+
 ## Optional
 
 - **Claude API key** (Settings → Claude): break ideas written to fit the exact minutes you have. Without a key, Margin uses its built-in ideas.
@@ -32,6 +36,13 @@ Open the dashboard → **Settings → Calendar link**:
 - Breaks go **only into real gaps** in your calendar. If a meeting is running, the nudge waits.
 - Escalation is gentle (badge → one notification → an optional 8-second screen dim) and can be turned off.
 - Every break you take is logged under **Time back**, so you can see where the minutes went.
+
+## Tests
+
+```bash
+npm test
+```
+This needs Node 18+ and nothing else. The tests cover recurring meetings, moved and cancelled instances, time zones, summer time, and that no break is ever planned inside a meeting.
 
 ## How it works
 

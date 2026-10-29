@@ -71,6 +71,7 @@ document.addEventListener("click", async (e) => {
   const action = e.target.closest("[data-action]")?.dataset.action;
   if (action) { await send({ type: "margin.breakAction", id: $("#next-actions").dataset.id, action }); return render(); }
 });
+$("#open-app").onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL("app/index.html") });
 $("#open-dashboard").onclick = () => chrome.runtime.openOptionsPage();
 $("#refresh").onclick = async () => { $("#next-when").textContent = "Refreshing…"; await send({ type: "margin.refresh" }); render(); };
 chrome.storage.onChanged.addListener(render);

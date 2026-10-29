@@ -2,6 +2,7 @@
 import { KEYS, get, set, getSettings, saveSettings } from "../shared/storage.js";
 import { todayISO, hhmm, minutesBetween, toLocalISO, addMinutes } from "../shared/time.js";
 import { connectGoogle } from "../integration/google.js";
+import { toWebDayPlan } from "../integration/adapters.js";
 
 const $ = (s) => document.querySelector(s);
 const send = (msg) => chrome.runtime.sendMessage(msg);
@@ -171,5 +172,12 @@ const RENDER = {
   },
 };
 
+$("#export-web").onclick = async () => {
+  const [day, plan] = [await get(KEYS.day), await get(KEYS.plan)];
+  if (!day || !plan) return;
+  const blob = new Blob([JSON.stringify(toWebDayPlan(day, plan), null, 2)], { type: "application/json" });
+  const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `margin-${day.date}.json` });
+  a.click(); URL.revokeObjectURL(a.href);
+};
 $("#refresh").onclick = async () => { await send({ type: "margin.refresh" }); route(); };
 route();

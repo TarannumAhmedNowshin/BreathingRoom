@@ -80,6 +80,11 @@ extension/popup.*        P1   popup UI + energy check-in
 integration/calendar.js  P2   ICS parse + gaps
 integration/google.js    P2   Google OAuth (stretch)
 integration/status.js    P2   Slack + Discord
+integration/adapters.js  P2   Plan → web/ DayPlan format
+app/                     P1   Break room: full-page day view, full-screen breathing break, in-page reminders (also a standalone website)
+app/margin-bridge.js     P2   feeds the extension's real calendar into app/
+web/                     P4   React web dashboard (Vite)
+tests/                   P2   npm test (node --test, no deps)
 planner/planner.js       P3   rules
 planner/ideas.js         P3   Claude
 planner/weather.js       P3   Open-Meteo
@@ -102,7 +107,9 @@ sample-data/*            P2   overloaded-day.ics + example JSON
 
 ## Checklists
 
-### P1: Extension (popup + nudges)
+### P1: Extension (popup + nudges) + break room (`app/`)
+- [x] Break room app: timeline, energy, full-screen box-breathing break, in-page reminders, tests (`node app/tests/run.js`)
+- [x] Integrated: opens from the popup and from notifications, and gets the real calendar from the extension
 - [ ] Popup: polish next-break card, timeline, energy check-in (`extension/popup.*`)
 - [ ] Empty states: no plan yet, all breaks done, no gaps today
 - [ ] Escalation: badge → notification → dim feels gentle; dim auto-fades and is dismissible
@@ -111,7 +118,10 @@ sample-data/*            P2   overloaded-day.ics + example JSON
 
 ### P2: Integration + data (lead integrator)
 - [ ] Push skeleton, share repo, make sure everyone can Load unpacked
-- [ ] `calendar.js`: test with your **real** Google secret iCal link; add RRULE + TZID handling
+- [x] `calendar.js`: RRULE (daily/weekly/fortnightly/monthly/yearly, COUNT, UNTIL), EXDATE, moved instances, TZID incl. Outlook zones, DURATION, cancelled/free/all-day
+- [x] `npm test`: 8 tests incl. "never schedules a break inside a meeting"
+- [x] `integration/adapters.js` + "Export for web dashboard" button → `web/` DayPlan format
+- [ ] Test with your **real** Google secret iCal link
 - [ ] Meeting-aware: create a meeting "now" and check the nudge waits
 - [ ] `status.js`: real Slack token test, real Discord webhook test
 - [ ] Stretch: Google OAuth (`google.js` + `oauth2` in manifest)

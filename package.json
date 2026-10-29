@@ -1,0 +1,10 @@
+{
+  "name": "margin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that finds the gaps in your calendar and protects them as breaks.",
+  "scripts": {
+    "test": "TZ=Europe/Dublin node --test tests/*.test.mjs && node app/tests/run.js"
+  }
+}

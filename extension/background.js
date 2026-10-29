@@ -117,5 +117,5 @@ chrome.notifications.onButtonClicked.addListener((nid, idx) => {
   breakAction(nid.slice(7), idx === 0 ? "take" : "snooze");
 });
 chrome.notifications.onClicked.addListener((nid) => {
-  if (nid.startsWith("margin:")) chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/dashboard.html#today") });
+  if (nid.startsWith("margin:")) chrome.tabs.create({ url: chrome.runtime.getURL("app/index.html") });
 });
