@@ -30,6 +30,7 @@ It fits the event's **"A workload tracker"** idea. It shows how much you're jugg
 - **Never during meetings.** Breaks go only into real gaps.
 - **Shows where the day is broken.** For example: *"2h 45m back-to-back from 10:00. Ask for one meeting to end 5 minutes early."* Fixing one recurring meeting gives you a gap every week.
 - **A clear stop.** A shutdown slot at the end of the day: write tomorrow's top three, then close the laptop.
+- **Fix the day, in one click.** For each stretch with no gap, it names the meeting to shorten and writes a polite request you can paste to the organiser: *"Could we wrap up Client workshop at 12:05 instead of 12:15?"*
 - **Counts the time you took back.** The figure grows only when you actually take a break.
 
 ## Use it

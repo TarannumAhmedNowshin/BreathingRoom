@@ -11,7 +11,7 @@ import {
   toHHMM,
   toMin,
 } from './plan'
-import { ROOM_URL, connectCalendarLink, dayFromRoom, forgetCalendarLink, ideaRequest, importCalendar, savedCalendarLink } from './room'
+import { ROOM_URL, connectCalendarLink, dayFromRoom, forgetCalendarLink, ideaRequest, importCalendar, savedCalendarLink, takenToday } from './room'
 import { saveApiKey, savedApiKey, storedIdeas, writeIdeas } from './ideas'
 
 type Mode = 'booked' | 'margin'
@@ -117,12 +117,32 @@ function plural(n: number, word: string) {
   return `${n} ${word}${n === 1 ? '' : 's'}`
 }
 
+// For a stretch with no gap, pick the meeting whose end sits closest to the middle:
+// ending that one 10 minutes early splits the stretch in two.
+function fixFor(day: DayPlan, s: Stretch) {
+  const meetings = day.busy
+    .map((b) => ({ title: b.title, start: toMin(b.start), end: toMin(b.end) }))
+    .filter((m) => m.end > s.start && m.start < s.end)
+  const mid = (s.start + s.end) / 2
+  const inner = meetings.filter((m) => m.end < s.end)
+  const pick = (inner.length ? inner : meetings).reduce((a, b) => (Math.abs(b.end - mid) < Math.abs(a.end - mid) ? b : a))
+  const newEnd = pick.end - 10
+  const run = formatDuration(s.end - s.start)
+  return {
+    key: `${s.start}-${pick.title}`,
+    title: pick.title,
+    text: `Ask for “${pick.title}” to end at ${toHHMM(newEnd)} instead of ${toHHMM(pick.end)}. That splits ${run} of back-to-back meetings with a 10-minute break.`,
+    message: `Hi, could we wrap up "${pick.title}" at ${toHHMM(newEnd)} instead of ${toHHMM(pick.end)} today? I have ${run} of back-to-back meetings and need a short break in between. Thanks!`,
+  }
+}
+
 export default function App() {
   const [day, setDay] = useState<DayPlan>(() => dayFromRoom()?.day ?? parseDayPlan(sample))
   const [source, setSource] = useState(() => dayFromRoom()?.label ?? 'Sample day')
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('booked')
   const fileInput = useRef<HTMLInputElement>(null)
+  const [copied, setCopied] = useState<string | null>(null)
   const [apiKey, setApiKey] = useState(savedApiKey)
   const [claude, setClaude] = useState<{ busy: boolean; msg: string }>(() => ({
     busy: false,
@@ -345,9 +365,40 @@ export default function App() {
         </form>
       )}
 
+      {isMargin && withMargin.problems.length > 0 && (
+        <section className="fix" aria-labelledby="fix-h">
+          <h2 id="fix-h">Fix the day</h2>
+          <p className="note">One shorter meeting gives you a break back, every time it repeats.</p>
+          <ul>
+            {withMargin.problems.map((p) => {
+              const f = fixFor(day, p)
+              return (
+                <li key={f.key}>
+                  <p>{f.text}</p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(f.message)
+                        setCopied(f.key)
+                        setTimeout(() => setCopied((c) => (c === f.key ? null : c)), 2500)
+                      } catch {
+                        window.prompt('Copy this message:', f.message)
+                      }
+                    }}
+                  >
+                    {copied === f.key ? 'Copied' : 'Copy request'}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+
       <section className="cta">
         <div>
-          <p className="title">Ready for today?</p>
+          <p className="title">{(() => { const t = takenToday(); return t.taken ? `You've taken ${plural(t.taken, 'break')} today: ${formatDuration(t.minutes)} back.` : 'Ready for today?' })()}</p>
           <p className="note">The break room reminds you once, quietly, when each break comes round, and never during a meeting.</p>
         </div>
         <a className="cta-button" href={ROOM_URL}>Start my day</a>

@@ -310,3 +310,12 @@ p { margin: 0; }
 .link-help summary { cursor: pointer; font-weight: 700; }
 .link-help ul { margin: 8px 0 0; padding-left: 18px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Fix the day */
+.fix { margin-top: 36px; padding: 18px 20px; border-radius: 14px; border: 1.5px solid var(--rule); }
+.fix h2 { margin: 0 0 4px; font-size: 1.2rem; }
+.fix .note { color: var(--muted); margin-bottom: 10px; }
+.fix ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.fix li { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 10px; background: var(--paper); border-left: 4px solid var(--hot); }
+.fix li p { flex: 1 1 260px; font-size: .95rem; }
+.fix li button { font: inherit; font-weight: 700; padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--ink); background: none; color: var(--ink); cursor: pointer; white-space: nowrap; }

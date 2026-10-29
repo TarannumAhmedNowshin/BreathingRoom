@@ -118,3 +118,16 @@ export async function connectCalendarLink(link: string) {
   try { localStorage.setItem(LINK_KEY, link.trim()) } catch { /* ignore */ }
   return result
 }
+
+// Breaks you actually took in the break room today, and the minutes they gave back.
+export function takenToday(): { taken: number; minutes: number } {
+  try {
+    const raw = localStorage.getItem(ROOM_KEY)
+    const s = raw ? (JSON.parse(raw) as { day?: { date?: string; done?: Record<string, number> } }) : null
+    if (!s?.day || s.day.date !== todayKey() || !s.day.done) return { taken: 0, minutes: 0 }
+    const mins = Object.values(s.day.done).filter((m) => typeof m === 'number')
+    return { taken: mins.length, minutes: Math.round(mins.reduce((a, b) => a + b, 0)) }
+  } catch {
+    return { taken: 0, minutes: 0 }
+  }
+}
