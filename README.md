@@ -39,6 +39,8 @@ npm run dev       # open the URL it prints
 npm test          # planner + calendar tests, plus 5 real-world day scenarios
 ```
 
+**Claude key for local runs (optional):** copy `web/.env.example` to `web/.env.local` and paste your key after `VITE_ANTHROPIC_API_KEY=`. It's used only by `npm run dev`. It's git-ignored and never built into the live site, so it can't leak. On the live site, each person pastes their own key in the *Break ideas by Claude* box, and it stays in their browser.
+
 The break room on its own needs no build: open `breathing-room/index.html` in any browser.
 
 ### Getting your calendar as an .ics file
