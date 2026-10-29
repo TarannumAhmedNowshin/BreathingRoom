@@ -1,7 +1,11 @@
 # Breathing Room
+[![Tests and deploy](https://github.com/TarannumAhmedNowshin/BreathingRoom/actions/workflows/pages.yml/badge.svg)](https://github.com/TarannumAhmedNowshin/BreathingRoom/actions/workflows/pages.yml)
+
 **Breaks planned around your real day.**
 
 **Live site:** https://tarannumahmednowshin.github.io/BreathingRoom/  (no install, no sign-in)
+
+**Try it in 30 seconds:** download the [example calendar](https://tarannumahmednowshin.github.io/BreathingRoom/room/example.ics), which works on any day. Open the live site, click **Import your calendar (.ics)**, switch to **With breaks**, then **Start my day**.
 
 ## The problem: compression burnout
 AI makes each task faster, so we take on more of them. The breaks between tasks go first, then the evenings. People go from 10:00 to 13:00 without standing up, eat lunch at their desk, and finish the day with no clear stop.
@@ -74,3 +78,6 @@ Everything runs in your browser. Your calendar file is read locally and never up
 - Set Slack or Discord status to "on a break" when a break starts.
 
 Built in three hours at the **Claude Code Impact Lab, Dublin** (29 Oct 2026), for the compression burnout brief.
+
+## License
+MIT. Use it, fork it, and make your own day better.
