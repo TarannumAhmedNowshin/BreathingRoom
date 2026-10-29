@@ -1,7 +1,7 @@
 # Breathing Room
 **Breaks planned around your real day.**
 
-**Live site:** https://tarannumahmednowshin.github.io/Margin/  (no install, no sign-in)
+**Live site:** https://tarannumahmednowshin.github.io/BreathingRoom/  (no install, no sign-in)
 
 ## The problem: compression burnout
 AI makes each task faster, so we take on more of them. The breaks between tasks go first, then the evenings. People go from 10:00 to 13:00 without standing up, eat lunch at their desk, and finish the day with no clear stop.
@@ -32,8 +32,8 @@ It fits the event's **"A workload tracker"** idea. It shows how much you're jugg
 Open the live site, or run it locally:
 
 ```bash
-git clone https://github.com/TarannumAhmedNowshin/Margin.git
-cd Margin
+git clone https://github.com/TarannumAhmedNowshin/BreathingRoom.git
+cd BreathingRoom
 npm run setup     # installs the dashboard (Node 20+)
 npm run dev       # open the URL it prints
 npm test          # planner + calendar tests, plus 5 real-world day scenarios

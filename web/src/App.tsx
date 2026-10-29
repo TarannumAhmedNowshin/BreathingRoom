@@ -244,7 +244,9 @@ export default function App() {
       ? `Breathing Room found ${plural(withMargin.breaks, 'break')}, ${formatDuration(withMargin.breakMinutes)} back for you.`
       : 'There was no room for a break today.'
     sub = withMargin.problems.length
-      ? `${withMargin.problems.map(range).join(' and ')} still has no gap. That one needs a meeting moved.`
+      ? withMargin.problems.length > 1
+        ? `${withMargin.problems.map(range).join(' and ')} still have no gap. Each needs a meeting moved.`
+        : `${range(withMargin.problems[0])} still has no gap. That one needs a meeting moved.`
       : 'Every stretch now has a rest in it.'
   }
 

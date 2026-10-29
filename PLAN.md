@@ -46,5 +46,5 @@ One-time: repo **Settings → Pages → Source: GitHub Actions**. The repo must 
 
 ## Submission form draft
 - **Project:** Breathing Room
-- **Link:** https://tarannumahmednowshin.github.io/Margin/ (repo: https://github.com/TarannumAhmedNowshin/Margin)
+- **Link:** https://tarannumahmednowshin.github.io/BreathingRoom/ (repo: https://github.com/TarannumAhmedNowshin/BreathingRoom)
 - **What it does:** For people whose calendars are back-to-back. Import your calendar and Breathing Room shows where your day has no rest, then plans water, movement, lunch and a shutdown into the real gaps between meetings. It reminds you once, quietly, never mid-meeting, and can put the breaks into your calendar as busy time so nobody books over them. It runs in the browser, with no sign-in, and your calendar never leaves your device.
