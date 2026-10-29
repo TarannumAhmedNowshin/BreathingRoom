@@ -23,8 +23,12 @@ export function storedIdeas(): Record<string, string> {
   }
 }
 
+// Local development only: a key in web/.env.local is used when you run `npm run dev`.
+// It is never included in the built site (import.meta.env.DEV is false there), so it can't leak from GitHub Pages.
+const devKey = (): string => (import.meta.env.DEV ? (import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined) ?? '' : '')
+
 export const savedApiKey = () => {
-  try { return localStorage.getItem(API_KEY_KEY) || '' } catch { return '' }
+  try { return localStorage.getItem(API_KEY_KEY) || devKey() } catch { return devKey() }
 }
 export const saveApiKey = (k: string) => {
   try { if (k) localStorage.setItem(API_KEY_KEY, k); else localStorage.removeItem(API_KEY_KEY) } catch { /* ignore */ }
