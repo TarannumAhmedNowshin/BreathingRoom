@@ -1,0 +1,56 @@
+[
+  {
+    "name": "meeting-marathon",
+    "description": "Meetings all day with one 5-minute gap",
+    "energy": "ok",
+    "events": [
+      { "title": "Quarterly business review", "start": "2026-10-29T09:00:00", "end": "2026-10-29T10:30:00" },
+      { "title": "Budget planning", "start": "2026-10-29T10:30:00", "end": "2026-10-29T12:00:00" },
+      { "title": "Lunch and learn", "start": "2026-10-29T12:00:00", "end": "2026-10-29T13:00:00" },
+      { "title": "Partner workshop", "start": "2026-10-29T13:00:00", "end": "2026-10-29T14:30:00" },
+      { "title": "Hiring panel", "start": "2026-10-29T14:35:00", "end": "2026-10-29T16:00:00" },
+      { "title": "Exec sync", "start": "2026-10-29T16:00:00", "end": "2026-10-29T18:00:00" }
+    ]
+  },
+  {
+    "name": "deep-work",
+    "description": "Only a standup, the rest is focus time",
+    "energy": "high",
+    "events": [
+      { "title": "Daily standup", "start": "2026-10-29T09:00:00", "end": "2026-10-29T09:15:00" }
+    ]
+  },
+  {
+    "name": "squeezed-lunch",
+    "description": "Only 20 minutes free over lunch, on a low-energy day",
+    "energy": "low",
+    "events": [
+      { "title": "Onboarding workshop", "start": "2026-10-29T09:30:00", "end": "2026-10-29T11:30:00" },
+      { "title": "Client escalation", "start": "2026-10-29T11:30:00", "end": "2026-10-29T12:40:00" },
+      { "title": "Board deck prep", "start": "2026-10-29T13:00:00", "end": "2026-10-29T15:00:00" },
+      { "title": "1:1 with manager", "start": "2026-10-29T15:30:00", "end": "2026-10-29T16:00:00" }
+    ]
+  },
+  {
+    "name": "late-shift",
+    "description": "Starts at 10:00 and ends with an evening call to another time zone",
+    "energy": "ok",
+    "settings": { "workdayStart": "10:00", "workdayEnd": "19:00" },
+    "events": [
+      { "title": "Team check-in", "start": "2026-10-29T10:00:00", "end": "2026-10-29T10:30:00" },
+      { "title": "Customer demo", "start": "2026-10-29T14:00:00", "end": "2026-10-29T15:00:00" },
+      { "title": "Call with the US team", "start": "2026-10-29T18:00:00", "end": "2026-10-29T19:00:00" }
+    ]
+  },
+  {
+    "name": "double-booked",
+    "description": "Overlapping invites that should merge into one busy block",
+    "energy": "ok",
+    "events": [
+      { "title": "Architecture review", "start": "2026-10-29T10:00:00", "end": "2026-10-29T11:30:00" },
+      { "title": "Security sign-off", "start": "2026-10-29T11:00:00", "end": "2026-10-29T12:00:00" },
+      { "title": "Release go/no-go", "start": "2026-10-29T11:45:00", "end": "2026-10-29T12:15:00" },
+      { "title": "Support handover", "start": "2026-10-29T15:00:00", "end": "2026-10-29T15:30:00" }
+    ]
+  }
+]
