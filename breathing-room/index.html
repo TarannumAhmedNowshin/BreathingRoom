@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- HEAD:START -->
+<title>Breathing Room</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Breathing Room reads your calendar and plans breaks, lunch and a shutdown into the real gaps in your day, then reminds you once, quietly, when it is time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Nunito:wght@400;600;700;800;900&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500..800&family=JetBrains+Mono:wght@500&display=swap">
+<!-- HEAD:END -->
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!-- BODY:START -->
+<a class="skip" href="#main">Skip to your day</a>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".35"/>
+        <circle cx="20" cy="20" r="10" fill="currentColor" class="logo-core"/>
+      </svg>
+      <div>
+        <h1>Breathing Room</h1>
+        <p class="tag">Breaks planned around your real day</p>
+      </div>
+    </div>
+    <div class="top-right">
+      <p class="today" id="today-date"></p>
+      <button class="btn ghost" id="open-settings" type="button" aria-expanded="false" aria-controls="settings">Settings</button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <ul class="promise" aria-label="How Breathing Room treats your data">
+    <li>No sign-in</li>
+    <li>No access to your calendar account</li>
+    <li>Your file never leaves this browser</li>
+  </ul>
+  <section class="notice" id="example-notice" hidden aria-label="Example day">
+    <p><strong>You're looking at an example day</strong>, shown as if it's <span id="example-clock">12:38</span>. Import your own calendar or add your meetings, and Breathing Room plans your breaks around them.</p>
+    <button class="btn small" id="clear-example" type="button">Start with an empty day</button>
+  </section>
+  <section class="notice" id="newday-notice" hidden aria-label="New day">
+    <p><strong>It's a new day.</strong> Yesterday's meetings were cleared. Import today's calendar to plan today's breaks.</p>
+  </section>
+
+  <div class="layout">
+    <div class="col-main">
+      <section class="hero" id="hero" aria-live="off" aria-label="Next break"></section>
+
+      <section class="card day-card" id="day-card" aria-labelledby="day-h">
+        <div class="section-head">
+          <h2 id="day-h">Your day</h2>
+          <span class="muted mono" id="hours-label"></span>
+        </div>
+        <div class="view-switch" role="radiogroup" aria-label="Show your day">
+          <button type="button" role="radio" aria-checked="false" data-view="booked">As booked</button>
+          <button type="button" role="radio" aria-checked="true" data-view="planned">With breaks</button>
+        </div>
+        <p class="view-note" id="view-note" aria-live="polite"></p>
+        <div class="strip" id="strip" aria-hidden="true"></div>
+        <div class="legend" aria-hidden="true">
+          <span><i class="sw sw-meeting"></i>Meeting</span>
+          <span><i class="sw sw-drink"></i>Water</span>
+          <span><i class="sw sw-move"></i>Move</span>
+          <span><i class="sw sw-lunch"></i>Lunch</span>
+          <span><i class="sw sw-shutdown"></i>Shutdown</span>
+        </div>
+        <ol class="timeline" id="timeline" aria-label="Today's meetings and breaks"></ol>
+      </section>
+    </div>
+
+    <div class="col-side">
+      <section class="card protect-card" aria-labelledby="protect-h">
+        <h2 id="protect-h">Put the breaks in your calendar</h2>
+        <p class="small">Download today's breaks and import them into Google Calendar or Outlook. They show as busy, so nobody books over them, and your calendar reminds you. No app to keep open.</p>
+        <button class="btn primary" id="export-ics" type="button">Add breaks to my calendar (.ics)</button>
+        <p class="small status" id="export-status" role="status"></p>
+      </section>
+      <section class="card" aria-labelledby="energy-h">
+        <h2 id="energy-h">How's your energy today?</h2>
+        <p class="muted small">Low energy gives you more frequent, longer breaks.</p>
+        <div class="seg" role="group" aria-labelledby="energy-h">
+          <button type="button" data-energy="low" aria-pressed="false">Low</button>
+          <button type="button" data-energy="ok" aria-pressed="false">Okay</button>
+          <button type="button" data-energy="good" aria-pressed="false">Good</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="glance-h">
+        <h2 id="glance-h">Today at a glance</h2>
+        <dl class="stats" id="stats"></dl>
+      </section>
+
+      <section class="card warn-card" id="warnings-card" aria-labelledby="warn-h" hidden>
+        <h2 id="warn-h">Worth fixing today</h2>
+        <ul class="warnings" id="warnings"></ul>
+      </section>
+
+      <section class="card" aria-labelledby="cal-h">
+        <h2 id="cal-h">Your calendar</h2>
+        <div class="import-row">
+          <input type="file" id="ics-file" accept=".ics,text/calendar" class="file-input">
+          <label class="btn primary" for="ics-file">Import calendar (.ics)</label>
+        </div>
+        <p class="small status" id="import-status" role="status"></p>
+        <details class="help">
+          <summary>How do I get an .ics file?</summary>
+          <ul>
+            <li><strong>Google Calendar:</strong> Settings → Import &amp; export → Export. Unzip the download and pick your calendar's .ics file.</li>
+            <li><strong>Outlook (desktop):</strong> File → Save Calendar → choose today's date range.</li>
+            <li><strong>Outlook (web):</strong> Settings → Calendar → Shared calendars → Publish, then open the ICS link and save it.</li>
+            <li><strong>Apple Calendar:</strong> File → Export → Export…</li>
+          </ul>
+          <p>The file is read in your browser. Nothing is uploaded.</p>
+        </details>
+
+        <form id="add-form" class="add-form" novalidate>
+          <h3>Add a meeting</h3>
+          <label for="add-title">What</label>
+          <input id="add-title" name="title" type="text" placeholder="e.g. Project check-in" maxlength="120" required>
+          <div class="time-pair">
+            <div><label for="add-start">From</label><input id="add-start" name="start" type="time" required></div>
+            <div><label for="add-end">To</label><input id="add-end" name="end" type="time" required></div>
+          </div>
+          <button class="btn" type="submit">Add to today</button>
+          <p class="small status" id="add-status" role="status"></p>
+        </form>
+
+        <h3 class="events-h">Today's meetings</h3>
+        <ul class="events" id="events"></ul>
+      </section>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <p>Everything stays in this browser. Nothing is sent anywhere. Reminders appear only while this page is open, once per break, and never during a meeting.</p>
+  </footer>
+</main>
+
+<aside class="settings" id="settings" hidden aria-labelledby="settings-h">
+  <div class="settings-head">
+    <h2 id="settings-h">Settings</h2>
+    <button class="btn ghost small" id="close-settings" type="button">Close</button>
+  </div>
+  <fieldset>
+    <legend>Work hours</legend>
+    <div class="time-pair">
+      <div><label for="day-start">Start</label><input id="day-start" type="time"></div>
+      <div><label for="day-end">Finish</label><input id="day-end" type="time"></div>
+    </div>
+    <p class="small status" id="hours-status" role="status"></p>
+  </fieldset>
+  <fieldset>
+    <legend>Reminders</legend>
+    <button class="btn" id="pause-btn" type="button">Pause reminders for 1 hour</button>
+    <label class="check"><input type="checkbox" id="sound-toggle"> Play a soft chime</label>
+    <label class="check"><input type="checkbox" id="notify-toggle"> Also show a desktop notification</label>
+    <p class="small status" id="notify-status" role="status"></p>
+    <button class="btn" id="preview-btn" type="button">Preview a reminder in 5 seconds</button>
+  </fieldset>
+  <fieldset>
+    <legend>Your data</legend>
+    <button class="btn" id="copy-plan" type="button">Copy today's plan as JSON</button>
+    <textarea id="plan-json" class="plan-json" rows="6" readonly hidden aria-label="Today's plan as JSON"></textarea>
+    <button class="btn danger" id="reset-btn" type="button">Clear all my data</button>
+    <p class="small status" id="data-status" role="status"></p>
+  </fieldset>
+</aside>
+
+<div class="banner" id="banner" hidden role="region" aria-label="Break reminder">
+  <div class="banner-inner">
+    <div class="banner-text">
+      <p class="eyebrow">Time for a break</p>
+      <p class="banner-title" id="banner-title"></p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" type="button" data-banner="start">Start break</button>
+      <button class="btn" type="button" data-banner="snooze">In 10 minutes</button>
+      <button class="btn ghost" type="button" data-banner="skip">Skip</button>
+    </div>
+  </div>
+</div>
+<p class="visually-hidden" id="announcer" aria-live="polite"></p>
+
+<div class="break-mode" id="break-mode" hidden role="dialog" aria-modal="true" aria-labelledby="bm-title">
+  <div class="bm-inner">
+    <p class="eyebrow" id="bm-type">On a break</p>
+    <h2 id="bm-title"></h2>
+    <div class="breath" aria-hidden="true"><div class="breath-ring" id="breath-ring"></div></div>
+    <p class="breath-cue" id="breath-cue">Breathe in</p>
+    <p class="bm-time mono" id="bm-time" aria-live="off"></p>
+    <p class="bm-idea" id="bm-idea"></p>
+    <button class="btn primary big" id="bm-done" type="button">I'm back</button>
+  </div>
+</div>
+
+<script src="planner.js"></script>
+<script src="ics.js"></script>
+<script src="app.js"></script>
+<!-- BODY:END -->
+</body>
+</html>
