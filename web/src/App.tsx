@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import sample from './sample-plan.json'
 import {
   type BreakType,
   type DayPlan,
+  type Stretch,
   formatDuration,
   parseDayPlan,
   summarise,
@@ -10,7 +11,15 @@ import {
   toMin,
 } from './plan'
 
-const MIN_ITEM_PX = 46
+type Kind = BreakType | 'meeting'
+
+interface Item {
+  kind: Kind
+  start: number
+  end: number
+  title: string
+  note?: string
+}
 
 const LABEL: Record<BreakType, string> = {
   lunch: 'Lunch',
@@ -19,42 +28,50 @@ const LABEL: Record<BreakType, string> = {
   break: 'Break',
 }
 
-function Icon({ type }: { type: BreakType }) {
-  const common = {
-    width: 20,
-    height: 20,
+function Icon({ kind }: { kind: Kind }) {
+  const p = {
+    width: 22,
+    height: 22,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
-    strokeWidth: 1.8,
+    strokeWidth: 2,
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
     'aria-hidden': true,
   }
-  switch (type) {
+  switch (kind) {
+    case 'meeting':
+      return (
+        <svg {...p}>
+          <circle cx="9" cy="8" r="3" />
+          <circle cx="17" cy="9" r="2.3" />
+          <path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M15 14.2c2.6-.4 4.8 1.2 5.5 4.3" />
+        </svg>
+      )
     case 'lunch':
       return (
-        <svg {...common}>
+        <svg {...p}>
           <path d="M3 11h18a9 9 0 0 1-18 0Z" />
           <path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3" />
         </svg>
       )
     case 'water':
       return (
-        <svg {...common}>
+        <svg {...p}>
           <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />
         </svg>
       )
     case 'move':
       return (
-        <svg {...common}>
+        <svg {...p}>
           <circle cx="13" cy="4.5" r="1.8" />
           <path d="M9 21l2.5-6 3 2.5V22M8 11l3.5-3 3 2 3 1M11.5 8l-1 7" />
         </svg>
       )
     default:
       return (
-        <svg {...common}>
+        <svg {...p}>
           <path d="M5 20c0-9 6-15 15-15 0 9-6 15-15 15Z" />
           <path d="M5 20 14 11" />
         </svg>
@@ -62,51 +79,48 @@ function Icon({ type }: { type: BreakType }) {
   }
 }
 
-function longDate(iso: string) {
+function dateParts(iso: string) {
   const d = new Date(`${iso}T12:00:00`)
-  if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('en-IE', { weekday: 'long', day: 'numeric', month: 'long' })
+  if (Number.isNaN(d.getTime())) return { day: iso, month: '', year: '', weekday: '' }
+  return {
+    weekday: d.toLocaleDateString('en-IE', { weekday: 'long' }),
+    day: String(d.getDate()),
+    month: d.toLocaleDateString('en-IE', { month: 'long' }),
+    year: String(d.getFullYear()),
+  }
 }
 
-function todayISO() {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+function buildItems(day: DayPlan): Item[] {
+  const meetings: Item[] = day.busy.map((b) => ({
+    kind: 'meeting',
+    start: toMin(b.start),
+    end: toMin(b.end),
+    title: b.title,
+  }))
+  const rests: Item[] = day.plan.map((p) => ({
+    kind: p.type,
+    start: toMin(p.start),
+    end: toMin(p.start) + p.minutes,
+    title: LABEL[p.type],
+    note: p.idea,
+  }))
+  return [...meetings, ...rests].sort((a, b) => a.start - b.start || a.end - b.end)
 }
 
-// Taller timeline on phones, where break cards wrap onto more lines.
-function usePxPerMin() {
-  const query = '(max-width: 640px)'
-  const [narrow, setNarrow] = useState(() => window.matchMedia(query).matches)
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const on = () => setNarrow(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return narrow ? 2.8 : 1.6
-}
-
-function useNowMinutes() {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 60_000)
-    return () => clearInterval(id)
-  }, [])
-  return now.getHours() * 60 + now.getMinutes()
-}
+// Capsule height grows with the length of the block, within limits.
+const capsuleHeight = (min: number) => Math.min(Math.max(min * 1.6, 56), 168)
+// Connector height grows with the free time before the next block.
+const connectorHeight = (gap: number) => Math.min(Math.max(gap * 0.6, 14), 64)
 
 export default function App() {
   const [day, setDay] = useState<DayPlan>(() => parseDayPlan(sample))
-  const [source, setSource] = useState<string>('Sample day')
+  const [source, setSource] = useState('Sample day')
   const [error, setError] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
-  const nowMin = useNowMinutes()
-  const PX_PER_MIN = usePxPerMin()
 
   async function openFile(file: File) {
     try {
-      const next = parseDayPlan(JSON.parse(await file.text()))
-      setDay(next)
+      setDay(parseDayPlan(JSON.parse(await file.text())))
       setSource(file.name)
       setError(null)
     } catch (e) {
@@ -119,54 +133,37 @@ export default function App() {
   }
 
   const s = summarise(day)
-
-  // Timeline runs 08:00 to 19:00, wider if the day goes outside that.
-  const allTimes = [
-    ...day.busy.flatMap((b) => [toMin(b.start), toMin(b.end)]),
-    ...day.plan.flatMap((p) => [toMin(p.start), toMin(p.start) + p.minutes]),
-  ]
-  const startMin = Math.min(8 * 60, Math.floor(Math.min(...allTimes, 8 * 60) / 60) * 60)
-  const endMin = Math.max(19 * 60, Math.ceil(Math.max(...allTimes, 19 * 60) / 60) * 60)
-  const y = (min: number) => (min - startMin) * PX_PER_MIN
-  const hours: number[] = []
-  for (let m = startMin; m <= endMin; m += 60) hours.push(m)
-  const showNow = day.date === todayISO() && nowMin >= startMin && nowMin <= endMin
+  const items = buildItems(day)
+  const d = dateParts(day.date)
+  const problemAt = (start: number): Stretch | undefined => s.problems.find((p) => p.start === start)
 
   return (
     <main className="page">
-      <header className="intro">
-        <p className="date">{longDate(day.date)}</p>
-        <h1 className="headline">
-          {s.meetings === 0 ? (
-            <>No meetings today. {s.breaks > 0 && <>We still planned {s.breaks} breaks.</>}</>
-          ) : (
-            <>
-              {s.meetings} {s.meetings === 1 ? 'meeting' : 'meetings'}, {formatDuration(s.meetingMinutes)} in
-              total.{' '}
-              {s.longest && (
-                <>
-                  Your longest run without a rest is{' '}
-                  <span className={s.problems.length ? 'hot' : undefined}>
-                    {formatDuration(s.longest.end - s.longest.start)}
-                  </span>
-                  .
-                </>
-              )}
-            </>
-          )}
+      <header className="top">
+        <p className="weekday">{d.weekday}</p>
+        <h1 className="date">
+          {d.day} {d.month} <span className="year">{d.year}</span>
         </h1>
-        <p className="lede">
-          {s.breaks > 0
-            ? `${s.breaks} ${s.breaks === 1 ? 'break' : 'breaks'} fitted into the gaps, ${formatDuration(s.breakMinutes)} back for you.`
-            : 'No breaks planned yet.'}{' '}
-          {s.problems.length > 0 &&
-            s.problems
-              .map((p) => `${toHHMM(p.start)} to ${toHHMM(p.end)} has no gap at all.`)
-              .join(' ')}
-        </p>
+
+        <div className="chips" aria-label="Today in numbers">
+          <div className="chip chip-meeting">
+            <strong>{s.meetings}</strong> meetings
+            <span>{formatDuration(s.meetingMinutes)}</span>
+          </div>
+          <div className="chip chip-rest">
+            <strong>{s.breaks}</strong> breaks
+            <span>{formatDuration(s.breakMinutes)} back</span>
+          </div>
+          {s.longest && (
+            <div className={`chip ${s.problems.length ? 'chip-alert' : 'chip-calm'}`}>
+              <strong>{formatDuration(s.longest.end - s.longest.start)}</strong> longest run
+              <span>without a rest</span>
+            </div>
+          )}
+        </div>
 
         <div className="source">
-          <span className="source-name">{source}</span>
+          <span>{source}</span>
           <button type="button" onClick={() => fileInput.current?.click()}>
             Open a plan file
           </button>
@@ -189,69 +186,44 @@ export default function App() {
         )}
       </header>
 
-      <section className="timeline" aria-label="Today's timeline" style={{ height: y(endMin) + 24 }}>
-        {hours.map((m) => (
-          <div key={m} className="hour" style={{ top: y(m) }}>
-            <span>{toHHMM(m)}</span>
-          </div>
-        ))}
-
-        {s.problems.map((p) => (
-          <div
-            key={`gap-${p.start}`}
-            className="nogap"
-            style={{ top: y(p.start), height: y(p.end) - y(p.start) }}
-          >
-            <span>{formatDuration(p.end - p.start)} with no gap</span>
-          </div>
-        ))}
-
-        <ol className="lane lane-busy" aria-label="Meetings">
-          {[...day.busy]
-            .sort((a, b) => toMin(a.start) - toMin(b.start))
-            .map((b) => (
-              <li
-                key={`${b.start}-${b.title}`}
-                className="meeting"
-                style={{
-                  top: y(toMin(b.start)),
-                  height: Math.max(y(toMin(b.end)) - y(toMin(b.start)) - 3, 22),
-                }}
-              >
-                <strong>{b.title}</strong>
-                <span>
-                  {b.start}–{b.end}
-                </span>
-              </li>
-            ))}
-        </ol>
-
-        <ol className="lane lane-rest" aria-label="Planned breaks">
-          {[...day.plan]
-            .sort((a, b) => toMin(a.start) - toMin(b.start))
-            .map((p) => (
-              <li
-                key={`${p.start}-${p.type}`}
-                className={`rest rest-${p.type}`}
-                style={{ top: y(toMin(p.start)), minHeight: Math.max(p.minutes * PX_PER_MIN, MIN_ITEM_PX) }}
-              >
-                <Icon type={p.type} />
-                <div>
-                  <strong>
-                    {LABEL[p.type]}, {p.minutes} min <time>{p.start}</time>
-                  </strong>
-                  <span>{p.idea}</span>
+      {items.length === 0 ? (
+        <p className="empty">Nothing on today. Open a plan file to see a day.</p>
+      ) : (
+        <ol className="timeline" aria-label="Today's timeline">
+          {items.map((it, i) => {
+            const prev = items[i - 1]
+            const gap = prev ? it.start - prev.end : 0
+            const problem = it.kind === 'meeting' ? problemAt(it.start) : undefined
+            return (
+              <li key={`${it.kind}-${it.start}-${it.title}`} className="row-wrap">
+                {prev && (
+                  <div className="connector" style={{ height: connectorHeight(gap) }} aria-hidden="true">
+                    {gap >= 15 && <span>{formatDuration(gap)} free</span>}
+                  </div>
+                )}
+                {problem && (
+                  <div className="warning">
+                    {formatDuration(problem.end - problem.start)} with no gap, {toHHMM(problem.start)} to{' '}
+                    {toHHMM(problem.end)}
+                  </div>
+                )}
+                <div className={`row kind-${it.kind}`}>
+                  <div className="capsule" style={{ height: capsuleHeight(it.end - it.start) }}>
+                    <Icon kind={it.kind} />
+                  </div>
+                  <div className="text">
+                    <p className="when">
+                      {toHHMM(it.start)}–{toHHMM(it.end)} ({formatDuration(it.end - it.start)})
+                    </p>
+                    <p className="title">{it.title}</p>
+                    {it.note && <p className="note">{it.note}</p>}
+                  </div>
                 </div>
               </li>
-            ))}
+            )
+          })}
         </ol>
-
-        {showNow && (
-          <div className="now" style={{ top: y(nowMin) }}>
-            <span>Now</span>
-          </div>
-        )}
-      </section>
+      )}
     </main>
   )
 }
