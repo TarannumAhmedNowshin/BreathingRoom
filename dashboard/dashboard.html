@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Margin · Dashboard</title>
+  <link rel="stylesheet" href="../shared/ui.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <!-- OWNER: Person 4 (web dashboard) -->
+  <!-- Welcome / sign-in: a real local profile saved in chrome.storage (no server, no fake auth) -->
+  <section id="welcome" class="screen" hidden>
+    <div class="welcome card">
+      <img src="../icons/icon128.png" alt="" width="48" height="48">
+      <h1>Margin</h1>
+      <p class="muted">Puts the space back in your day. Margin reads your calendar, finds the gaps, and protects them as breaks. It never nudges you mid-meeting.</p>
+      <form id="profile-form">
+        <label>What should we call you?<input name="name" required autocomplete="given-name"></label>
+        <label>Your workday
+          <span class="row"><input name="workdayStart" type="time" value="09:00"><span>to</span><input name="workdayEnd" type="time" value="18:00"></span>
+        </label>
+        <button class="primary" type="submit">Start with the sample day</button>
+        <p class="muted small">You can connect your real calendar in the next step.</p>
+      </form>
+    </div>
+  </section>
+
+  <div id="app" hidden>
+    <nav>
+      <strong class="brand">Margin</strong>
+      <a href="#today">Today</a>
+      <a href="#stats">Time back</a>
+      <a href="#integrations">Integrations</a>
+      <a href="#team">Team</a>
+      <a href="#shutdown">Shutdown</a>
+      <a href="#settings">Settings</a>
+      <span class="spacer"></span>
+      <span id="hello" class="muted"></span>
+    </nav>
+
+    <main>
+      <section id="today" class="screen">
+        <header class="row between">
+          <div><h1 id="today-title">Today</h1><p class="muted" id="today-sub"></p></div>
+          <div class="row"><span id="source-pill" class="pill"></span><button id="refresh">Refresh plan</button></div>
+        </header>
+        <div id="warnings"></div>
+        <div class="stats-row" id="day-stats"></div>
+        <div class="card"><div id="timeline" class="timeline" aria-label="Today's timeline"></div></div>
+        <div class="card"><h3>Planned breaks</h3><ul id="break-list" class="break-list"></ul></div>
+      </section>
+
+      <section id="stats" class="screen" hidden>
+        <h1>Time given back</h1>
+        <p class="muted">Where the minutes went: breaks you actually took, logged on this device.</p>
+        <div class="stats-row" id="give-back-stats"></div>
+        <div class="card"><h3>Last 7 days</h3><div id="week-chart" class="week-chart"></div></div>
+      </section>
+
+      <section id="integrations" class="screen" hidden>
+        <h1>Integrations</h1>
+        <div class="tiles" id="tiles"></div>
+      </section>
+
+      <section id="team" class="screen" hidden>
+        <h1>Team mode</h1>
+        <p class="muted">Breaks are easier when they're shared. Send your lunch slot to your team.</p>
+        <div class="card">
+          <p id="team-lunch"></p>
+          <div class="row"><button class="primary" id="copy-lunch">Copy invite</button><button id="post-lunch">Post to Discord</button></div>
+        </div>
+      </section>
+
+      <section id="shutdown" class="screen" hidden>
+        <h1>Shutdown ritual</h1>
+        <p class="muted">Write tomorrow's top three, then you're done for the day.</p>
+        <form id="shutdown-form" class="card">
+          <input name="t1" placeholder="1." required>
+          <input name="t2" placeholder="2.">
+          <input name="t3" placeholder="3.">
+          <button class="primary" type="submit">Save and finish the day</button>
+          <p id="shutdown-done" class="muted" hidden>Saved. You'll see these in the popup tomorrow morning. You're done.</p>
+        </form>
+      </section>
+
+      <section id="settings" class="screen" hidden>
+        <h1>Settings</h1>
+        <form id="settings-form" class="card grid">
+          <h3>Calendar</h3>
+          <label>Calendar link (.ics secret address)
+            <input name="icsUrl" type="url" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics">
+            <span class="muted small">Google Calendar → Settings → your calendar → "Secret address in iCal format". Outlook and iCloud links also work.</span>
+          </label>
+          <label>…or upload an .ics file <input id="ics-file" type="file" accept=".ics,text/calendar"></label>
+          <label class="check"><input name="useSampleData" type="checkbox"> Use the sample overloaded day when no calendar is connected</label>
+          <label>Workday <span class="row"><input name="workdayStart" type="time"><span>to</span><input name="workdayEnd" type="time"></span></label>
+
+          <h3>Claude</h3>
+          <label>Claude API key (break ideas)
+            <input name="anthropicKey" type="password" placeholder="sk-ant-…" autocomplete="off">
+            <span class="muted small">Stored only in this browser. Without a key, Margin uses its built-in ideas.</span>
+          </label>
+
+          <h3>Status sync</h3>
+          <label>Slack user token <input name="slackToken" type="password" placeholder="xoxp-…" autocomplete="off"></label>
+          <label>Discord webhook URL <input name="discordWebhook" type="url" placeholder="https://discord.com/api/webhooks/…"></label>
+
+          <h3>Comfort</h3>
+          <label class="check"><input name="dimEnabled" type="checkbox"> Dim the screen briefly if I ignore two nudges</label>
+          <label class="check"><input name="lowStim" type="checkbox"> Low-stimulation mode (calm colours, no streaks, larger buttons)</label>
+
+          <div class="row"><button class="primary" type="submit">Save</button><span id="saved" class="muted" hidden>Saved. Plan rebuilt.</span></div>
+        </form>
+        <div class="card">
+          <h3>Demo helpers</h3>
+          <div class="row"><button data-test="0">Test badge</button><button data-test="1">Test notification</button><button data-test="2">Test dim</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>

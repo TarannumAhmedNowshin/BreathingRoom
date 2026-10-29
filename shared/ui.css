@@ -1,0 +1,27 @@
+/* Shared design tokens — everyone uses these so popup + dashboard look like one product. */
+:root{
+  --bg:#F6F1E7; --surface:#FFFDF8; --ink:#1F2A27; --muted:#6B746F; --line:#E4DCCB;
+  --accent:#2F6F5E; --accent-soft:#DCEBE4; --warn:#B4532A; --warn-soft:#F6E2D7; --busy:#C9C1B0;
+  --radius:12px; --font:"Inter",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#141C1A; --surface:#1C2623; --ink:#ECE6DA; --muted:#9AA39E; --line:#2C3834;
+    --accent:#7FC2AA; --accent-soft:#23362F; --warn:#E59A74; --warn-soft:#3A2820; --busy:#3A4541; }
+}
+/* Low-stimulation mode: calmer, flatter, bigger targets */
+body.lowstim{ --accent:#6B8F84; --warn:#8F7A6B; --warn-soft:transparent; }
+body.lowstim *{ animation:none!important; transition:none!important; box-shadow:none!important; }
+body.lowstim button{ min-height:44px; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--font)}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+button{font:inherit;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input,select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.muted{color:var(--muted)}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.row{display:flex;gap:8px;align-items:center}

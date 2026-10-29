@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Margin",
+  "version": "0.1.0",
+  "description": "Puts the space back in your day. Reads your calendar, finds the gaps, and protects them as breaks.",
+  "icons": { "128": "icons/icon128.png" },
+  "action": { "default_popup": "extension/popup.html", "default_icon": { "128": "icons/icon128.png" } },
+  "background": { "service_worker": "extension/background.js", "type": "module" },
+  "options_page": "dashboard/dashboard.html",
+  "permissions": ["storage", "alarms", "notifications", "scripting", "identity"],
+  "host_permissions": [
+    "https://calendar.google.com/*",
+    "https://outlook.office365.com/*",
+    "https://*.icloud.com/*",
+    "https://www.googleapis.com/*",
+    "https://api.anthropic.com/*",
+    "https://slack.com/*",
+    "https://discord.com/*",
+    "https://api.open-meteo.com/*",
+    "<all_urls>"
+  ]
+}
