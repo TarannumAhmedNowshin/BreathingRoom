@@ -149,7 +149,7 @@ export default function App() {
   const [copied, setCopied] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [drafting, setDrafting] = useState<string | null>(null)
-  const [apiKey, setApiKey] = useState(savedApiKey)
+  const [apiKey] = useState(savedApiKey)
   const [claude, setClaude] = useState<{ busy: boolean; msg: string }>(() => ({
     busy: false,
     msg: Object.keys(storedIdeas()).length ? 'Today\'s break ideas were written by Claude.' : '',
@@ -180,10 +180,6 @@ export default function App() {
     }
   }
 
-  async function askClaude(e: React.FormEvent) {
-    e.preventDefault()
-    await runClaude()
-  }
 
   function pickMood(m: Mood) {
     setMood(m)
@@ -504,29 +500,6 @@ export default function App() {
         </details>
       </section>
 
-      {ideaRequest() && (
-        <form className="claude" onSubmit={askClaude}>
-          <div>
-            <p className="title">Break ideas by Claude</p>
-            <p className="note" aria-live="polite">
-              {claude.msg || 'Optional. Claude rewrites each idea to fit the exact minutes you have, your energy and the Dublin weather. Your key stays in this browser.'}
-            </p>
-          </div>
-          <div className="claude-row">
-            <input
-              type="password"
-              aria-label="Claude API key"
-              placeholder="Claude API key (sk-ant-…)"
-              autoComplete="off"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <button type="submit" disabled={claude.busy || !apiKey.trim()}>
-              {claude.busy ? 'Writing…' : 'Write my ideas'}
-            </button>
-          </div>
-        </form>
-      )}
 
       <footer className="source">
         <span>Showing: {source}</span>
