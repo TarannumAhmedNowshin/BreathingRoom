@@ -1,84 +1,92 @@
 # Breathing Room
 [![Tests and deploy](https://github.com/TarannumAhmedNowshin/BreathingRoom/actions/workflows/pages.yml/badge.svg)](https://github.com/TarannumAhmedNowshin/BreathingRoom/actions/workflows/pages.yml)
 
-**Breaks planned around your real day.**
+**Breaks planned around your real day. A response to compression burnout.**
 
-**Live site:** https://tarannumahmednowshin.github.io/BreathingRoom/  (no install, no sign-in)
+**Live:** https://tarannumahmednowshin.github.io/BreathingRoom/ (no install, no sign-in, no server holding your data)
 
-**Try it in 30 seconds:** download the [example calendar](https://tarannumahmednowshin.github.io/BreathingRoom/room/example.ics), which works on any day. Open the live site, click **Import your calendar (.ics)**, switch to **With breaks**, then **Start my day**.
+> **Try it in 30 seconds:** download the [example calendar](https://tarannumahmednowshin.github.io/BreathingRoom/room/example.ics), which works on any day. Open the live site, click **Import your calendar (.ics)**, switch to **With breaks**, then **Start my day**.
 
-## The problem: compression burnout
-AI makes each task faster, so we take on more of them. The breaks between tasks go first, then the evenings. People go from 10:00 to 13:00 without standing up, eat lunch at their desk, and finish the day with no clear stop.
+---
 
-Most wellbeing tools make this worse: another app to check, more nudges, another streak to keep. Breathing Room takes the calendar you already have and protects time for you inside it.
+## The problem
+AI makes each task faster, so we take on more of them. The first thing to go is the gap *between* tasks, then the lunch break, then the evening. That's **compression burnout**: a calendar that looks productive and a person running from 10:00 to 13:00 without standing up.
 
-## Who it's for
-People whose day is run by meetings and screens: knowledge workers, team leads, developers, teachers, students and first-jobbers. In other words, anyone who looks up at 15:00 and realises they haven't had water since 9.
+Most wellbeing tools add to the load: another app, another stream of nudges, another streak. Breathing Room works the other way. It reads the calendar you already have and gives time back inside it.
 
-It fits the event's **"A workload tracker"** idea. It shows how much you're juggling from your calendar, then goes one step further and plans the breaks for you.
+**Who it's for:** people whose day is run by meetings and screens. Knowledge workers, team leads, developers, teachers, students and first-jobbers.
+**Brief fit:** the *"A workload tracker"* idea, extended. It doesn't just show the load, it plans the recovery and helps you fix the cause.
 
-## How it works
-1. **See your day as booked.** Import your calendar (`.ics`). The overview shows every stretch with no rest in it, for example *"Your day has no breathing room from 10:00 to 13:00."*
-2. **Switch to "With breaks".** Water, movement, lunch and an end-of-day shutdown are placed only in the real gaps between meetings, never on top of one.
-3. **Start my day.** The break room reminds you **once, quietly**, when each break comes round, and waits if a meeting runs over. *Start break* opens a calm full-screen break with a box-breathing guide.
-4. **Optional: break ideas by Claude.** Paste your Claude API key and Claude rewrites each break idea to fit the exact minutes you have, your energy and the Dublin weather. The break room's reminders use the same ideas. The key stays in your browser, and the built-in ideas work without it.
-5. **Put the breaks in your calendar.** One click downloads them as an `.ics` file. They show as busy, so nobody books over them, and your own calendar reminds you, with no app to keep open.
+## What it does
+| | |
+|---|---|
+| **See the day as booked** | Imports your calendar (`.ics` file or a live iCal link that refreshes every 15 min) and flags every stretch with no rest, e.g. *"Your day has no breathing room from 10:00 to 13:00."* |
+| **Plan breaks into real gaps** | Water, movement, lunch and an end-of-day shutdown, placed **only** between meetings, never on top of one. Back-to-back invites, overlaps and repeating meetings are handled. |
+| **Adapts to how you feel** | A one-tap mood/energy check-in. Low energy means longer, more frequent breaks. Claude can plan your free time around today's mood. |
+| **Fix the day** | For each stretch with no gap, it names the meeting to shorten and **drafts the request to the organiser** with AI (Gemini, with a built-in fallback). One shorter recurring meeting gives a break back every week. |
+| **One quiet reminder** | The break room reminds you **once** per break, waits if a meeting overruns, and opens a calm full-screen break with a box-breathing guide. It doesn't nag, escalate or keep streaks. |
+| **Breaks in your calendar** | One click exports the breaks as busy events, with reminders on your phone and watch, so nobody books over them and no tab needs to stay open. |
+| **Counts time given back** | *"You've taken 2 breaks today: 35 min back."* It only counts breaks you actually took. |
 
-## How it gives time back
-- **No setup.** Import once in the morning and the plan is made for you.
-- **One reminder per break, then silence.** It never repeats, escalates or nags.
-- **Never during meetings.** Breaks go only into real gaps.
-- **Shows where the day is broken.** For example: *"2h 45m back-to-back from 10:00. Ask for one meeting to end 5 minutes early."* Fixing one recurring meeting gives you a gap every week.
-- **A clear stop.** A shutdown slot at the end of the day: write tomorrow's top three, then close the laptop.
-- **Fix the day, in one click.** For each stretch with no gap, it names the meeting to shorten and writes a polite request you can paste to the organiser: *"Could we wrap up Client workshop at 12:05 instead of 12:15?"*
-- **Counts the time you took back.** The figure grows only when you actually take a break.
+## Why it gives time back (the one rule)
+- **No setup work:** import once and the plan is done.
+- **Fewer interruptions:** one reminder per break, never mid-meeting, pausable.
+- **It fixes the cause, not just the symptom:** "Fix the day" removes the back-to-back stretch at its source.
+- **The saved time goes back to the person:** it becomes rest that's tracked, not more work.
 
-## Use it
-Open the live site, or run it locally:
+## Architecture
+```
+            ┌───────────────────────── one static site (GitHub Pages) ─────────────────────────┐
+            │                                                                                   │
+ .ics file ─┤   web/  Day overview (React + TypeScript + Vite)        breathing-room/  Break room │
+ iCal link ─┼─▶ calendar-proxy (Vercel fn) ─▶ import ─▶ plan ─────────▶ reminders · break mode  │
+            │        As booked / With breaks · Fix the day · mood        calendar export (.ics)   │
+            │                       │                                         │                   │
+            │                       └──────── shared localStorage state ──────┘                   │
+            │                         planner.js + ics.js (one planner, one truth)               │
+            └───────────────────────────────────────────────────────────────────────────────────┘
+                     optional AI: Claude (break ideas, free-time plan) · Gemini (meeting requests)
+```
+- **One planner, one source of truth.** The overview loads the break room's pure, tested `planner.js` and `ics.js`, so both pages always show the same plan.
+- **Local-first.** All state lives in the browser. The only network calls are the optional iCal fetch, which goes through a stateless proxy that stores and logs nothing, and the optional AI calls.
+- **Graceful degradation.** Every AI feature has a built-in fallback. With no keys at all, the full product still works.
 
+## Run locally
 ```bash
 git clone https://github.com/TarannumAhmedNowshin/BreathingRoom.git
 cd BreathingRoom
-npm run setup     # installs the dashboard (Node 20+)
-npm run dev       # open the URL it prints
-npm test          # planner + calendar tests, plus 5 real-world day scenarios
+npm run setup        # installs the overview (Node 20+)
+npm run dev          # overview at /, break room at /room/
+npm test             # planner + calendar tests and 5 real-world day scenarios
 ```
+**Optional AI keys:** copy `web/.env.example` to `web/.env.local`:
+```
+VITE_ANTHROPIC_API_KEY=   # Claude: break ideas and free-time plan (local dev; on the live site users paste their own)
+VITE_GEMINI_API_KEY=      # Gemini: "Fix the day" meeting requests
+```
+`.env.local` is git-ignored. For the live site, `GEMINI_API_KEY` is supplied as a GitHub Actions secret at build time.
 
-**Claude key for local runs (optional):** copy `web/.env.example` to `web/.env.local` and paste your key after `VITE_ANTHROPIC_API_KEY=`. It's used only by `npm run dev`. It's git-ignored and never built into the live site, so it can't leak. On the live site, each person pastes their own key in the *Break ideas by Claude* box, and it stays in their browser.
+## Quality
+- **Tests on every push.** Planner rules, calendar parsing (weekly rules, exceptions, cancellations, folded lines), and five scenario days: a meeting marathon, a squeezed lunch, a late shift, double-booked invites, and a deep-work day. All assert that **no break ever lands inside a meeting**.
+- **CI/CD.** GitHub Actions runs the tests, builds, and deploys to Pages (`.github/workflows/pages.yml`).
+- **Accessible.** Keyboard navigable, ARIA live regions, light and dark themes, phone-width layout with no horizontal scroll.
 
-The break room on its own needs no build: open `breathing-room/index.html` in any browser.
-
-### Getting your calendar as an .ics file
-- **Google Calendar:** Settings → Import & export → Export. Unzip it and pick your calendar's `.ics` file.
-- **Outlook (web):** Settings → Calendar → Shared calendars → Publish. Open the ICS link and save the file.
-- **Outlook (desktop):** File → Save Calendar.
-- **Apple Calendar:** File → Export.
-
-No calendar to hand? Use `breathing-room/example.ics`, which works on any day.
-
-## Project structure
-| Path | What |
+## Repository
+| Path | Purpose |
 |---|---|
-| `web/` | Day overview (React + Vite): "As booked / With breaks", calendar import, *Start my day* |
-| `web/src/ideas.ts` | Claude-written break ideas (Claude Opus 5.5, weather from Open-Meteo), cached per day |
-| `web/src/room.ts` | Connects the overview to the break room. They share one calendar and plan in the browser. |
-| `breathing-room/` | Break room (plain HTML/JS): reminders, energy check-in, break mode, add breaks to your calendar, settings |
-| `breathing-room/planner.js` | Plans breaks around meetings (pure function, tested) |
-| `breathing-room/ics.js` | Reads `.ics` files: repeating meetings, exceptions, cancellations |
-| `breathing-room/tests/` | `npm test`: planner and calendar tests, plus scenario days (meeting marathon, squeezed lunch, double-booked…) |
-| `calendar-proxy/` | Small serverless function that fetches a live iCal link, since calendar servers block browsers from reading them directly |
-| `.github/workflows/pages.yml` | Tests, builds and deploys the live site on every push |
-
-The build serves the break room at `/room/` beside the overview, so it's one site with shared local storage.
+| `web/` | Day overview: React + TypeScript + Vite |
+| `web/src/room.ts` | Bridge to the break room's shared state and planner |
+| `web/src/ideas.ts` · `web/src/gemini.ts` | Claude ideas and free-time plan · Gemini meeting requests |
+| `breathing-room/` | Break room: no-build HTML/JS, also runs standalone |
+| `breathing-room/planner.js` · `ics.js` | Pure planner and calendar reader, used by both pages |
+| `breathing-room/tests/` | `npm test` |
+| `calendar-proxy/` | Stateless serverless iCal fetcher (calendar servers block direct browser reads) |
 
 ## Privacy
-Everything runs in your browser. Your calendar file is read locally and never uploaded. There's no sign-in, no server, and no access to your calendar account. Settings → *Clear all my data* removes everything.
+There's no account and no database. Your calendar is read in your browser and never stored on a server. **Settings → Clear all my data** removes everything.
 
 ## What's next
-- Live Google Calendar and Outlook connection, so there's no export step.
-- Set Slack or Discord status to "on a break" when a break starts.
+Native Google and Outlook OAuth (no export step), Slack and Teams status while you're on a break, and team mode: protected shared lunch slots.
 
-Built in three hours at the **Claude Code Impact Lab, Dublin** (29 Oct 2026), for the compression burnout brief.
-
-## License
-MIT. Use it, fork it, and make your own day better.
+---
+Built in three hours at the **Claude Code Impact Lab, Dublin** (29 Oct 2026), compression burnout brief. MIT licensed.
