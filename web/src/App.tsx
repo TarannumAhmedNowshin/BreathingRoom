@@ -305,6 +305,57 @@ export default function App() {
         <span className="date">{longDate(day.date)}</span>
       </header>
 
+      <section className="link-card" aria-labelledby="link-h">
+        <h2 id="link-h">Connect your calendar</h2>
+        <p className="note">
+          Paste your calendar's secret iCal link once. Today's meetings load by themselves and refresh every 15 minutes.
+          Works with Google, Outlook, Apple and any calendar that gives an iCal link. No sign-in, and nothing is stored on a server.
+        </p>
+        <form
+          className="link-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (link.trim()) loadLink(link)
+          }}
+        >
+          <label htmlFor="cal-link" className="visually-hidden">Calendar link</label>
+          <input
+            id="cal-link"
+            type="url"
+            inputMode="url"
+            placeholder="https://… or webcal://…"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button type="submit" disabled={linkBusy || !link.trim()}>
+            {linkBusy ? 'Loading…' : linked ? 'Refresh' : 'Connect'}
+          </button>
+          {linked && (
+            <button
+              type="button"
+              className="quiet"
+              onClick={() => {
+                forgetCalendarLink()
+                setLinked(false)
+                setLink('')
+              }}
+            >
+              Disconnect
+            </button>
+          )}
+        </form>
+        <details className="link-help">
+          <summary>Where do I find my iCal link?</summary>
+          <ul>
+            <li><strong>Google Calendar:</strong> Settings, then your calendar, then Integrate calendar. Copy "Secret address in iCal format".</li>
+            <li><strong>Outlook:</strong> Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</li>
+            <li><strong>Apple iCloud:</strong> Calendar app, share the calendar as Public Calendar, then copy the link.</li>
+          </ul>
+        </details>
+      </section>
+
       <section className="lead" aria-live="polite">
         <h1>{headline}</h1>
         <p>{sub}</p>
@@ -333,9 +384,9 @@ export default function App() {
           {claude.busy
             ? claude.msg
             : !ideaRequest()
-              ? 'Connect your calendar below, then Claude plans your free time around how you feel.'
+              ? 'This is a sample day, so your mood can\'t change it yet. Connect your calendar above to plan around your real day.'
               : !apiKey.trim()
-                ? 'Add your Claude key at the bottom of the page, and Claude plans your free time for you.'
+                ? 'Your breaks already fit your real day. Claude plans your free time when a Claude key is set up.'
                 : claude.msg || 'Pick one and Claude plans the empty parts of your day to match.'}
         </p>
       </section>
@@ -449,56 +500,6 @@ export default function App() {
         <a className="cta-button" href={ROOM_URL}>Start my day</a>
       </section>
 
-      <section className="link-card" aria-labelledby="link-h">
-        <h2 id="link-h">Connect your calendar</h2>
-        <p className="note">
-          Paste your calendar's secret iCal link once. Today's meetings load by themselves and refresh every 15 minutes.
-          Works with Google, Outlook, Apple and any calendar that gives an iCal link. No sign-in, and nothing is stored on a server.
-        </p>
-        <form
-          className="link-form"
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (link.trim()) loadLink(link)
-          }}
-        >
-          <label htmlFor="cal-link" className="visually-hidden">Calendar link</label>
-          <input
-            id="cal-link"
-            type="url"
-            inputMode="url"
-            placeholder="https://… or webcal://…"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <button type="submit" disabled={linkBusy || !link.trim()}>
-            {linkBusy ? 'Loading…' : linked ? 'Refresh' : 'Connect'}
-          </button>
-          {linked && (
-            <button
-              type="button"
-              className="quiet"
-              onClick={() => {
-                forgetCalendarLink()
-                setLinked(false)
-                setLink('')
-              }}
-            >
-              Disconnect
-            </button>
-          )}
-        </form>
-        <details className="link-help">
-          <summary>Where do I find my iCal link?</summary>
-          <ul>
-            <li><strong>Google Calendar:</strong> Settings, then your calendar, then Integrate calendar. Copy "Secret address in iCal format".</li>
-            <li><strong>Outlook:</strong> Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</li>
-            <li><strong>Apple iCloud:</strong> Calendar app, share the calendar as Public Calendar, then copy the link.</li>
-          </ul>
-        </details>
-      </section>
 
 
       <footer className="source">
