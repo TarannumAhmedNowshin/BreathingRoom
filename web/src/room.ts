@@ -96,3 +96,25 @@ export function importCalendar(text: string): { day: DayPlan; found: number; ski
   writeState({ events, eventsDate: todayKey(), isExample: false })
   return { day: planDay(events, readState()), found: events.length, skippedAllDay }
 }
+
+// Live calendar link (Google, Outlook, Apple or any iCal link). The browser can't read another
+// site's calendar directly, so a small helper fetches it and passes it straight back (stores nothing).
+// The helper lives in ../calendar-proxy and is deployed on Vercel.
+export const CALENDAR_HELPER = 'https://calendar-proxy-iota.vercel.app/api/ics'
+const LINK_KEY = 'breathing-room:calendar-link'
+
+export function savedCalendarLink(): string {
+  try { return localStorage.getItem(LINK_KEY) || '' } catch { return '' }
+}
+export function forgetCalendarLink() {
+  try { localStorage.removeItem(LINK_KEY) } catch { /* ignore */ }
+}
+
+export async function connectCalendarLink(link: string) {
+  const res = await fetch(`${CALENDAR_HELPER}?url=${encodeURIComponent(link.trim())}`, { cache: 'no-store' })
+  const text = await res.text()
+  if (!res.ok) throw new Error(text || `The calendar couldn't be read (${res.status}).`)
+  const result = importCalendar(text)
+  try { localStorage.setItem(LINK_KEY, link.trim()) } catch { /* ignore */ }
+  return result
+}

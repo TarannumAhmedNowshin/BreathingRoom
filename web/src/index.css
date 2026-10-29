@@ -283,3 +283,30 @@ p { margin: 0; }
   cursor: pointer;
 }
 .claude-row button:disabled { opacity: 0.5; cursor: default; }
+
+/* Connect a calendar link */
+.link-card {
+  margin-top: 40px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--margin-soft);
+  color: var(--margin-ink);
+}
+.link-card h2 { margin: 0 0 6px; font-size: 1.2rem; color: var(--ink); }
+.link-card .note { margin: 0; font-size: .92rem; }
+.link-form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.link-form input {
+  flex: 1 1 240px; min-width: 0; font: inherit; font-size: .95rem;
+  padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--rule);
+  background: var(--paper); color: var(--ink);
+}
+.link-form button {
+  font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: 0;
+  background: var(--margin); color: #fff; cursor: pointer;
+}
+.link-form button:disabled { opacity: .6; cursor: default; }
+.link-form button.quiet { background: transparent; color: var(--margin-ink); border: 1.5px solid currentColor; }
+.link-help { margin-top: 12px; font-size: .88rem; }
+.link-help summary { cursor: pointer; font-weight: 700; }
+.link-help ul { margin: 8px 0 0; padding-left: 18px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
