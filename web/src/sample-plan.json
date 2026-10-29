@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-29",
+  "busy": [
+    { "start": "09:00", "end": "09:30", "title": "Stand-up" },
+    { "start": "10:00", "end": "11:00", "title": "Client call" },
+    { "start": "11:00", "end": "12:00", "title": "Sprint planning" },
+    { "start": "12:00", "end": "13:00", "title": "Design review" },
+    { "start": "14:00", "end": "15:30", "title": "Interview panel" },
+    { "start": "16:00", "end": "16:30", "title": "1:1 with manager" },
+    { "start": "16:30", "end": "17:30", "title": "Incident follow-up" }
+  ],
+  "plan": [
+    { "start": "09:35", "minutes": 5, "type": "water", "idea": "Refill your water before the long block" },
+    { "start": "13:00", "minutes": 30, "type": "lunch", "idea": "Eat away from the desk" },
+    { "start": "13:35", "minutes": 15, "type": "move", "idea": "Walk around the block" },
+    { "start": "15:35", "minutes": 10, "type": "break", "idea": "Box breathing, then a stretch" },
+    { "start": "17:35", "minutes": 10, "type": "move", "idea": "Close the laptop and stand up" }
+  ]
+}
