@@ -24,6 +24,7 @@ One-time: repo **Settings → Pages → Source: GitHub Actions**. The repo must 
 |---|---|
 | Day overview | `web/src/App.tsx`, `web/src/index.css`, `web/src/plan.ts` |
 | Break room | `breathing-room/*` |
+| Claude break ideas | `web/src/ideas.ts` (ported from `p3-planner`) |
 | Integration (shared state, build, deploy) | `web/src/room.ts`, `web/vite.config.ts`, `.github/workflows/pages.yml`, `breathing-room/overview-link.js` |
 | README + submission | `README.md` |
 

@@ -80,6 +80,11 @@
       dayEnd: state.settings.dayEnd,
       energy: state.day.energy,
     });
+    // Break ideas Claude wrote for today on the day overview (web/src/ideas.ts), if any.
+    try {
+      const o = JSON.parse(localStorage.getItem('breathing-room:ideas') || 'null');
+      if (o && o.date === dateKey()) plan.breaks.forEach((b) => { if (o.ideas[b.id]) b.idea = o.ideas[b.id]; });
+    } catch (e) { /* keep the built-in ideas */ }
   }
 
   const dayS = () => P.toMin(state.settings.dayStart);

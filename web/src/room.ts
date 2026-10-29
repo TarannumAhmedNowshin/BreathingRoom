@@ -2,9 +2,10 @@
 // Both run on the same site, so they share one localStorage state: whatever calendar you
 // import here is what the break room reminds you about, and vice versa.
 import type { BreakType, DayPlan } from './plan'
+import { storedIdeas, type IdeaBreak, type IdeaMeeting } from './ideas'
 
 interface RoomEvent { title: string; start: string; end: string }
-interface RoomBreak { type: 'drink' | 'move' | 'lunch' | 'shutdown'; start: string; len: number; idea: string; title: string }
+interface RoomBreak { id: string; type: 'drink' | 'move' | 'lunch' | 'shutdown'; start: string; len: number; idea: string; title: string }
 interface RoomState {
   events: RoomEvent[]
   eventsDate: string
@@ -60,10 +61,25 @@ export function dayFromRoom(): { day: DayPlan; label: string } | null {
   return { day: planDay(s.events, s), label: 'Your calendar' }
 }
 
-function planDay(events: RoomEvent[], s: RoomState | null): DayPlan {
+function roomBreaks(events: RoomEvent[], s: RoomState | null): RoomBreak[] {
   const settings = s?.settings ?? { dayStart: '09:00', dayEnd: '17:30' }
-  const energy = s?.day?.date === todayKey() ? s.day.energy : null
-  const { breaks } = window.Planner!.buildPlan(events, { dayStart: settings.dayStart, dayEnd: settings.dayEnd, energy })
+  const { breaks } = window.Planner!.buildPlan(events, { dayStart: settings.dayStart, dayEnd: settings.dayEnd, energy: energyToday(s) })
+  const ideas = storedIdeas() // Claude-written ideas for today, if any
+  return breaks.map((b) => ({ ...b, idea: ideas[b.id] ?? b.idea }))
+}
+
+const energyToday = (s: RoomState | null) => (s?.day?.date === todayKey() ? s.day.energy : null)
+
+// What Claude needs to write today's ideas.
+export function ideaRequest(): { breaks: IdeaBreak[]; meetings: IdeaMeeting[]; energy: string | null } | null {
+  const s = readState()
+  if (!s || !window.Planner || s.isExample || s.eventsDate !== todayKey()) return null
+  const breaks = roomBreaks(s.events, s).map((b) => ({ id: b.id, kind: b.type === 'drink' ? 'water' : b.type, start: b.start, minutes: b.len }))
+  return { breaks, meetings: s.events, energy: energyToday(s) }
+}
+
+function planDay(events: RoomEvent[], s: RoomState | null): DayPlan {
+  const breaks = roomBreaks(events, s)
   return {
     date: todayKey(),
     busy: [...events].sort((a, b) => a.start.localeCompare(b.start)).map((e) => ({ start: e.start, end: e.end, title: e.title })),

@@ -252,3 +252,34 @@ p { margin: 0; }
   white-space: nowrap;
 }
 .cta-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+.claude {
+  display: grid;
+  gap: 12px;
+  margin-top: 32px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1.5px solid var(--rule);
+}
+.claude .note { color: var(--muted); }
+.claude-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.claude-row input {
+  flex: 1 1 220px;
+  font: inherit;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--rule);
+  background: var(--paper);
+  color: var(--ink);
+}
+.claude-row button {
+  font: inherit;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--ink);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.claude-row button:disabled { opacity: 0.5; cursor: default; }

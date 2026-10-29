@@ -17,7 +17,8 @@ It fits the event's **"A workload tracker"** idea. It shows how much you're jugg
 1. **See your day as booked.** Import your calendar (`.ics`). The overview shows every stretch with no rest in it, for example *"Your day has no breathing room from 10:00 to 13:00."*
 2. **Switch to "With breaks".** Water, movement, lunch and an end-of-day shutdown are placed only in the real gaps between meetings, never on top of one.
 3. **Start my day.** The break room reminds you **once, quietly**, when each break comes round, and waits if a meeting runs over. *Start break* opens a calm full-screen break with a box-breathing guide.
-4. **Put the breaks in your calendar.** One click downloads them as an `.ics` file. They show as busy, so nobody books over them, and your own calendar reminds you, with no app to keep open.
+4. **Optional: break ideas by Claude.** Paste your Claude API key and Claude rewrites each break idea to fit the exact minutes you have, your energy and the Dublin weather. The break room's reminders use the same ideas. The key stays in your browser, and the built-in ideas work without it.
+5. **Put the breaks in your calendar.** One click downloads them as an `.ics` file. They show as busy, so nobody books over them, and your own calendar reminds you, with no app to keep open.
 
 ## How it gives time back
 - **No setup.** Import once in the morning and the plan is made for you.
@@ -52,6 +53,7 @@ No calendar to hand? Use `breathing-room/example.ics`, which works on any day.
 | Path | What |
 |---|---|
 | `web/` | Day overview (React + Vite): "As booked / With breaks", calendar import, *Start my day* |
+| `web/src/ideas.ts` | Claude-written break ideas (Claude Opus 5.5, weather from Open-Meteo), cached per day |
 | `web/src/room.ts` | Connects the overview to the break room. They share one calendar and plan in the browser. |
 | `breathing-room/` | Break room (plain HTML/JS): reminders, energy check-in, break mode, add breaks to your calendar, settings |
 | `breathing-room/planner.js` | Plans breaks around meetings (pure function, tested) |
@@ -67,6 +69,5 @@ Everything runs in your browser. Your calendar file is read locally and never up
 ## What's next
 - Live Google Calendar and Outlook connection, so there's no export step.
 - Set Slack or Discord status to "on a break" when a break starts.
-- Claude-written break ideas matched to the exact minutes you have.
 
 Built in three hours at the **Claude Code Impact Lab, Dublin** (29 Oct 2026), for the compression burnout brief.

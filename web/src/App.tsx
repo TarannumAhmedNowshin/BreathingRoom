@@ -11,7 +11,8 @@ import {
   toHHMM,
   toMin,
 } from './plan'
-import { ROOM_URL, dayFromRoom, importCalendar } from './room'
+import { ROOM_URL, dayFromRoom, ideaRequest, importCalendar } from './room'
+import { saveApiKey, savedApiKey, storedIdeas, writeIdeas } from './ideas'
 
 type Mode = 'booked' | 'margin'
 
@@ -122,6 +123,27 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('booked')
   const fileInput = useRef<HTMLInputElement>(null)
+  const [apiKey, setApiKey] = useState(savedApiKey)
+  const [claude, setClaude] = useState<{ busy: boolean; msg: string }>(() => ({
+    busy: false,
+    msg: Object.keys(storedIdeas()).length ? 'Today\'s break ideas were written by Claude.' : '',
+  }))
+
+  async function askClaude(e: React.FormEvent) {
+    e.preventDefault()
+    const req = ideaRequest()
+    if (!req || !apiKey.trim()) return
+    saveApiKey(apiKey.trim())
+    setClaude({ busy: true, msg: 'Claude is writing ideas that fit each break…' })
+    try {
+      const n = await writeIdeas(apiKey.trim(), req.breaks, req.meetings, req.energy)
+      const fromRoom = dayFromRoom()
+      if (fromRoom) setDay(fromRoom.day)
+      setClaude({ busy: false, msg: `Claude wrote ${plural(n, 'idea')}. The break room will use them too.` })
+    } catch (err) {
+      setClaude({ busy: false, msg: (err as Error).message })
+    }
+  }
 
   // Pick up changes made in the break room (energy, meetings added by hand) when you come back.
   useEffect(() => {
@@ -265,6 +287,30 @@ export default function App() {
             )
           })}
         </ol>
+      )}
+
+      {isMargin && ideaRequest() && (
+        <form className="claude" onSubmit={askClaude}>
+          <div>
+            <p className="title">Break ideas by Claude</p>
+            <p className="note" aria-live="polite">
+              {claude.msg || 'Optional. Claude rewrites each idea to fit the exact minutes you have, your energy and the Dublin weather. Your key stays in this browser.'}
+            </p>
+          </div>
+          <div className="claude-row">
+            <input
+              type="password"
+              aria-label="Claude API key"
+              placeholder="Claude API key (sk-ant-…)"
+              autoComplete="off"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+            <button type="submit" disabled={claude.busy || !apiKey.trim()}>
+              {claude.busy ? 'Writing…' : 'Write my ideas'}
+            </button>
+          </div>
+        </form>
       )}
 
       <section className="cta">
