@@ -11,7 +11,7 @@ import {
   toHHMM,
   toMin,
 } from './plan'
-import { ROOM_URL, dayFromRoom, importCalendar } from './room'
+import { ROOM_URL, connectCalendarLink, dayFromRoom, forgetCalendarLink, importCalendar, savedCalendarLink } from './room'
 
 type Mode = 'booked' | 'margin'
 
@@ -122,6 +122,35 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('booked')
   const fileInput = useRef<HTMLInputElement>(null)
+  const [link, setLink] = useState(() => savedCalendarLink())
+  const [linked, setLinked] = useState(() => !!savedCalendarLink())
+  const [linkBusy, setLinkBusy] = useState(false)
+
+  async function loadLink(url: string) {
+    setLinkBusy(true)
+    try {
+      const { day: fromLink, found, skippedAllDay } = await connectCalendarLink(url)
+      const at = new Date().toTimeString().slice(0, 5)
+      setDay(fromLink)
+      setSource(`Your calendar link: ${plural(found, 'meeting')} today${skippedAllDay ? `, ${skippedAllDay} all-day skipped` : ''}, updated ${at}`)
+      setError(found ? null : 'Your calendar has no meetings today.')
+      setLinked(true)
+      setMode('margin')
+    } catch (e) {
+      setError(`Couldn't load your calendar. ${(e as Error).message}`)
+    } finally {
+      setLinkBusy(false)
+    }
+  }
+
+  // With a saved link, load today's calendar on open and refresh every 15 minutes.
+  useEffect(() => {
+    const saved = savedCalendarLink()
+    if (!saved) return
+    loadLink(saved)
+    const id = setInterval(() => loadLink(saved), 15 * 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   // Pick up changes made in the break room (energy, meetings added by hand) when you come back.
   useEffect(() => {
@@ -273,6 +302,57 @@ export default function App() {
           <p className="note">The break room reminds you once, quietly, when each break comes round, and never during a meeting.</p>
         </div>
         <a className="cta-button" href={ROOM_URL}>Start my day</a>
+      </section>
+
+      <section className="link-card" aria-labelledby="link-h">
+        <h2 id="link-h">Connect your calendar</h2>
+        <p className="note">
+          Paste your calendar's secret iCal link once. Today's meetings load by themselves and refresh every 15 minutes.
+          Works with Google, Outlook, Apple and any calendar that gives an iCal link. No sign-in, and nothing is stored on a server.
+        </p>
+        <form
+          className="link-form"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (link.trim()) loadLink(link)
+          }}
+        >
+          <label htmlFor="cal-link" className="visually-hidden">Calendar link</label>
+          <input
+            id="cal-link"
+            type="url"
+            inputMode="url"
+            placeholder="https://… or webcal://…"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          <button type="submit" disabled={linkBusy || !link.trim()}>
+            {linkBusy ? 'Loading…' : linked ? 'Refresh' : 'Connect'}
+          </button>
+          {linked && (
+            <button
+              type="button"
+              className="quiet"
+              onClick={() => {
+                forgetCalendarLink()
+                setLinked(false)
+                setLink('')
+              }}
+            >
+              Disconnect
+            </button>
+          )}
+        </form>
+        <details className="link-help">
+          <summary>Where do I find my iCal link?</summary>
+          <ul>
+            <li><strong>Google Calendar:</strong> Settings, then your calendar, then Integrate calendar. Copy "Secret address in iCal format".</li>
+            <li><strong>Outlook:</strong> Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</li>
+            <li><strong>Apple iCloud:</strong> Calendar app, share the calendar as Public Calendar, then copy the link.</li>
+          </ul>
+        </details>
       </section>
 
       <footer className="source">
