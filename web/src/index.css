@@ -319,3 +319,24 @@ p { margin: 0; }
 .fix li { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 10px; background: var(--paper); border-left: 4px solid var(--hot); }
 .fix li p { flex: 1 1 260px; font-size: .95rem; }
 .fix li button { font: inherit; font-weight: 700; padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--ink); background: none; color: var(--ink); cursor: pointer; white-space: nowrap; }
+
+/* How are you feeling today? */
+.mood { margin-top: 18px; }
+.mood-q { margin: 0 0 8px; font-weight: 700; }
+.mood-row { display: flex; gap: 8px; }
+.mood-row button {
+  flex: 1; font: inherit; font-weight: 700; padding: 10px 8px; border-radius: 12px;
+  border: 1.5px solid var(--rule); background: var(--paper); color: var(--ink); cursor: pointer;
+}
+.mood-row button[aria-pressed='true'] { background: var(--margin); border-color: var(--margin); color: #fff; }
+.mood-row button:disabled { opacity: .6; cursor: default; }
+.mood-note { margin: 8px 0 0; font-size: .9rem; color: var(--muted); }
+
+/* Free time planned by Claude */
+.claude-block {
+  border: 2px dashed var(--margin);
+  background: transparent;
+  color: var(--ink);
+}
+.claude-block .note { color: var(--muted); }
+.mode-booked .slot:has(.claude-block) { display: none; }

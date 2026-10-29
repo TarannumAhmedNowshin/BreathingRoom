@@ -131,3 +131,19 @@ export function takenToday(): { taken: number; minutes: number } {
     return { taken: 0, minutes: 0 }
   }
 }
+
+// Mood for today (the break room calls it energy): low, ok or good. Shared with the break room.
+export type Mood = 'low' | 'ok' | 'good'
+export function moodToday(): Mood | null {
+  const s = readState()
+  return (s?.day?.date === todayKey() ? (s.day.energy as Mood | null) : null) ?? null
+}
+export function setMoodToday(mood: Mood) {
+  const s = readState()
+  const d = s?.day?.date === todayKey() ? s.day : { date: todayKey(), done: {}, skipped: {}, snooze: {}, notified: {} }
+  writeState({ day: { ...(d as RoomState['day']), energy: mood } })
+}
+export function workday(): { dayStart: string; dayEnd: string } {
+  const s = readState()
+  return { dayStart: s?.settings?.dayStart ?? '09:00', dayEnd: s?.settings?.dayEnd ?? '17:30' }
+}
