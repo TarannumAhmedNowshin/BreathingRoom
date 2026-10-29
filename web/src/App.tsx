@@ -6,19 +6,22 @@ import {
   type Stretch,
   formatDuration,
   parseDayPlan,
+  stretches,
   summarise,
   toHHMM,
   toMin,
 } from './plan'
 
-type Kind = BreakType | 'meeting'
+type Mode = 'booked' | 'margin'
 
-interface Item {
-  kind: Kind
+interface Row {
+  id: string
+  kind: 'meeting' | BreakType
   start: number
   end: number
   title: string
   note?: string
+  pressure: number // 0 calm .. 3 no rest for 3h+
 }
 
 const LABEL: Record<BreakType, string> = {
@@ -28,10 +31,10 @@ const LABEL: Record<BreakType, string> = {
   break: 'Break',
 }
 
-function Icon({ kind }: { kind: Kind }) {
+function Icon({ kind }: { kind: BreakType }) {
   const p = {
-    width: 22,
-    height: 22,
+    width: 20,
+    height: 20,
     viewBox: '0 0 24 24',
     fill: 'none',
     stroke: 'currentColor',
@@ -40,82 +43,83 @@ function Icon({ kind }: { kind: Kind }) {
     strokeLinejoin: 'round' as const,
     'aria-hidden': true,
   }
-  switch (kind) {
-    case 'meeting':
-      return (
-        <svg {...p}>
-          <circle cx="9" cy="8" r="3" />
-          <circle cx="17" cy="9" r="2.3" />
-          <path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5M15 14.2c2.6-.4 4.8 1.2 5.5 4.3" />
-        </svg>
-      )
-    case 'lunch':
-      return (
-        <svg {...p}>
-          <path d="M3 11h18a9 9 0 0 1-18 0Z" />
-          <path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3" />
-        </svg>
-      )
-    case 'water':
-      return (
-        <svg {...p}>
-          <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />
-        </svg>
-      )
-    case 'move':
-      return (
-        <svg {...p}>
-          <circle cx="13" cy="4.5" r="1.8" />
-          <path d="M9 21l2.5-6 3 2.5V22M8 11l3.5-3 3 2 3 1M11.5 8l-1 7" />
-        </svg>
-      )
-    default:
-      return (
-        <svg {...p}>
-          <path d="M5 20c0-9 6-15 15-15 0 9-6 15-15 15Z" />
-          <path d="M5 20 14 11" />
-        </svg>
-      )
-  }
+  if (kind === 'lunch')
+    return (
+      <svg {...p}>
+        <path d="M3 11h18a9 9 0 0 1-18 0Z" />
+        <path d="M8 7c0-1.5 1-1.5 1-3M12 7c0-1.5 1-1.5 1-3M16 7c0-1.5 1-1.5 1-3" />
+      </svg>
+    )
+  if (kind === 'water')
+    return (
+      <svg {...p}>
+        <path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" />
+      </svg>
+    )
+  if (kind === 'move')
+    return (
+      <svg {...p}>
+        <circle cx="13" cy="4.5" r="1.8" />
+        <path d="M9 21l2.5-6 3 2.5V22M8 11l3.5-3 3 2 3 1M11.5 8l-1 7" />
+      </svg>
+    )
+  return (
+    <svg {...p}>
+      <path d="M5 20c0-9 6-15 15-15 0 9-6 15-15 15Z" />
+      <path d="M5 20 14 11" />
+    </svg>
+  )
 }
 
-function dateParts(iso: string) {
+function longDate(iso: string) {
   const d = new Date(`${iso}T12:00:00`)
-  if (Number.isNaN(d.getTime())) return { day: iso, month: '', year: '', weekday: '' }
-  return {
-    weekday: d.toLocaleDateString('en-IE', { weekday: 'long' }),
-    day: String(d.getDate()),
-    month: d.toLocaleDateString('en-IE', { month: 'long' }),
-    year: String(d.getFullYear()),
-  }
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleDateString('en-IE', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function buildItems(day: DayPlan): Item[] {
-  const meetings: Item[] = day.busy.map((b) => ({
-    kind: 'meeting',
-    start: toMin(b.start),
-    end: toMin(b.end),
-    title: b.title,
-  }))
-  const rests: Item[] = day.plan.map((p) => ({
+// How long you've gone without a rest by the end of this meeting, as a 0-3 level.
+function pressureFor(end: number, all: Stretch[]) {
+  const s = all.find((x) => end > x.start && end <= x.end)
+  const run = s ? end - s.start : 0
+  return run >= 180 ? 3 : run >= 120 ? 2 : run >= 60 ? 1 : 0
+}
+
+function buildRows(day: DayPlan, withBreaks: boolean): Row[] {
+  const all = stretches(withBreaks ? day : { ...day, plan: [] })
+  const meetings: Row[] = day.busy.map((b) => {
+    const end = toMin(b.end)
+    return {
+      id: `m-${b.start}-${b.title}`,
+      kind: 'meeting',
+      start: toMin(b.start),
+      end,
+      title: b.title,
+      pressure: pressureFor(end, all),
+    }
+  })
+  const rests: Row[] = day.plan.map((p) => ({
+    id: `r-${p.start}-${p.type}`,
     kind: p.type,
     start: toMin(p.start),
     end: toMin(p.start) + p.minutes,
     title: LABEL[p.type],
     note: p.idea,
+    pressure: 0,
   }))
   return [...meetings, ...rests].sort((a, b) => a.start - b.start || a.end - b.end)
 }
 
-// Capsule height grows with the length of the block, within limits.
-const capsuleHeight = (min: number) => Math.min(Math.max(min * 1.6, 56), 168)
-// Connector height grows with the free time before the next block.
-const connectorHeight = (gap: number) => Math.min(Math.max(gap * 0.6, 14), 64)
+const blockHeight = (min: number) => Math.min(Math.max(min * 1.25, 50), 150)
+
+function plural(n: number, word: string) {
+  return `${n} ${word}${n === 1 ? '' : 's'}`
+}
 
 export default function App() {
   const [day, setDay] = useState<DayPlan>(() => parseDayPlan(sample))
   const [source, setSource] = useState('Sample day')
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<Mode>('booked')
   const fileInput = useRef<HTMLInputElement>(null)
 
   async function openFile(file: File) {
@@ -123,6 +127,7 @@ export default function App() {
       setDay(parseDayPlan(JSON.parse(await file.text())))
       setSource(file.name)
       setError(null)
+      setMode('booked')
     } catch (e) {
       setError(
         e instanceof SyntaxError
@@ -132,98 +137,131 @@ export default function App() {
     }
   }
 
-  const s = summarise(day)
-  const items = buildItems(day)
-  const d = dateParts(day.date)
-  const problemAt = (start: number): Stretch | undefined => s.problems.find((p) => p.start === start)
+  const booked = summarise({ ...day, plan: [] })
+  const withMargin = summarise(day)
+  const isMargin = mode === 'margin'
+  const rows = buildRows(day, isMargin)
+
+  const range = (p: Stretch) => `${toHHMM(p.start)} to ${toHHMM(p.end)}`
+
+  let headline: string
+  let sub: string
+  if (!isMargin) {
+    if (booked.problems.length) {
+      headline = `Your day has no margin from ${range(booked.problems[0])}.`
+      sub =
+        booked.problems.length > 1
+          ? `And ${plural(booked.problems.length - 1, 'more stretch')} like it. ${plural(booked.meetings, 'meeting')}, ${formatDuration(booked.meetingMinutes)} booked.`
+          : `${plural(booked.meetings, 'meeting')}, ${formatDuration(booked.meetingMinutes)} booked, and nothing planned in between.`
+    } else if (booked.meetings) {
+      headline = `${plural(booked.meetings, 'meeting')}, ${formatDuration(booked.meetingMinutes)} booked.`
+      sub = 'No stretch runs past two hours, but nothing is planned in between yet.'
+    } else {
+      headline = 'Nothing booked today.'
+      sub = 'Open a plan file to see a real day.'
+    }
+  } else {
+    headline = withMargin.breaks
+      ? `Margin found ${plural(withMargin.breaks, 'break')}, ${formatDuration(withMargin.breakMinutes)} back for you.`
+      : 'There was no room for a break today.'
+    sub = withMargin.problems.length
+      ? `${withMargin.problems.map(range).join(' and ')} still has no gap. That one needs a meeting moved.`
+      : 'Every stretch now has a rest in it.'
+  }
 
   return (
-    <main className="page">
-      <header className="top">
-        <p className="weekday">{d.weekday}</p>
-        <h1 className="date">
-          {d.day} {d.month} <span className="year">{d.year}</span>
-        </h1>
-
-        <div className="chips" aria-label="Today in numbers">
-          <div className="chip chip-meeting">
-            <strong>{s.meetings}</strong> meetings
-            <span>{formatDuration(s.meetingMinutes)}</span>
-          </div>
-          <div className="chip chip-rest">
-            <strong>{s.breaks}</strong> breaks
-            <span>{formatDuration(s.breakMinutes)} back</span>
-          </div>
-          {s.longest && (
-            <div className={`chip ${s.problems.length ? 'chip-alert' : 'chip-calm'}`}>
-              <strong>{formatDuration(s.longest.end - s.longest.start)}</strong> longest run
-              <span>without a rest</span>
-            </div>
-          )}
-        </div>
-
-        <div className="source">
-          <span>{source}</span>
-          <button type="button" onClick={() => fileInput.current?.click()}>
-            Open a plan file
-          </button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept=".json,application/json"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) openFile(f)
-              e.target.value = ''
-            }}
-          />
-        </div>
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
+    <main className={`page mode-${mode}`}>
+      <header className="masthead">
+        <span className="wordmark">Margin</span>
+        <span className="date">{longDate(day.date)}</span>
       </header>
 
-      {items.length === 0 ? (
-        <p className="empty">Nothing on today. Open a plan file to see a day.</p>
-      ) : (
-        <ol className="timeline" aria-label="Today's timeline">
-          {items.map((it, i) => {
-            const prev = items[i - 1]
-            const gap = prev ? it.start - prev.end : 0
-            const problem = it.kind === 'meeting' ? problemAt(it.start) : undefined
+      <section className="lead" aria-live="polite">
+        <h1>{headline}</h1>
+        <p>{sub}</p>
+      </section>
+
+      <div className="switch" role="radiogroup" aria-label="View">
+        <button type="button" role="radio" aria-checked={!isMargin} onClick={() => setMode('booked')}>
+          As booked
+        </button>
+        <button type="button" role="radio" aria-checked={isMargin} onClick={() => setMode('margin')}>
+          With Margin
+        </button>
+        <span className="thumb" aria-hidden="true" />
+      </div>
+
+      {rows.length > 0 && (
+        <ol className="day" aria-label="Today">
+          {rows.map((r, i) => {
+            const prev = rows.slice(0, i).reverse().find((x) => isMargin || x.kind === 'meeting')
+            const gap = prev ? Math.max(r.start - prev.end, 0) : 0
+            const isRest = r.kind !== 'meeting'
+            const space = isMargin ? Math.min(Math.max(gap * 0.7, 10), 56) : Math.min(gap * 0.25, 14)
+            const problem = !isRest && booked.problems.find((p) => p.start === r.start)
             return (
-              <li key={`${it.kind}-${it.start}-${it.title}`} className="row-wrap">
-                {prev && (
-                  <div className="connector" style={{ height: connectorHeight(gap) }} aria-hidden="true">
-                    {gap >= 15 && <span>{formatDuration(gap)} free</span>}
-                  </div>
-                )}
+              <li
+                key={r.id}
+                className={`slot ${isRest ? 'is-rest' : 'is-meeting'}`}
+                style={{ marginTop: i === 0 ? 0 : space }}
+                aria-hidden={isRest && !isMargin}
+              >
                 {problem && (
-                  <div className="warning">
-                    {formatDuration(problem.end - problem.start)} with no gap, {toHHMM(problem.start)} to{' '}
-                    {toHHMM(problem.end)}
-                  </div>
+                  <p className="flag">
+                    {formatDuration(problem.end - problem.start)} with no margin
+                  </p>
                 )}
-                <div className={`row kind-${it.kind}`}>
-                  <div className="capsule" style={{ height: capsuleHeight(it.end - it.start) }}>
-                    <Icon kind={it.kind} />
+                <div className="slot-inner">
+                  <div className="time">
+                    <span>{toHHMM(r.start)}</span>
                   </div>
-                  <div className="text">
-                    <p className="when">
-                      {toHHMM(it.start)}–{toHHMM(it.end)} ({formatDuration(it.end - it.start)})
-                    </p>
-                    <p className="title">{it.title}</p>
-                    {it.note && <p className="note">{it.note}</p>}
-                  </div>
+                  {isRest ? (
+                    <div className={`block rest rest-${r.kind}`}>
+                      <Icon kind={r.kind as BreakType} />
+                      <div>
+                        <p className="title">
+                          {r.title}, {formatDuration(r.end - r.start)}
+                        </p>
+                        <p className="note">{r.note}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`block meeting p${r.pressure}`} style={{ minHeight: blockHeight(r.end - r.start) }}>
+                      <p className="title">{r.title}</p>
+                      <p className="note">
+                        {toHHMM(r.start)}–{toHHMM(r.end)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </li>
             )
           })}
         </ol>
       )}
+
+      <footer className="source">
+        <span>Showing: {source}</span>
+        <button type="button" onClick={() => fileInput.current?.click()}>
+          Open a plan file
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept=".json,application/json"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) openFile(f)
+            e.target.value = ''
+          }}
+        />
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+      </footer>
     </main>
   )
 }
