@@ -229,3 +229,26 @@ p { margin: 0; }
   .slot-inner { grid-template-columns: 44px 1fr; gap: 10px; }
   .flag { margin-left: 54px; }
 }
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 40px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--margin-soft);
+  color: var(--margin-ink);
+}
+.cta-button {
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: var(--margin);
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cta-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }

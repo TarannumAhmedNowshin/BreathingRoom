@@ -1,10 +1,11 @@
 {
-  "name": "margin",
-  "version": "0.1.0",
+  "name": "breathing-room",
   "private": true,
-  "type": "module",
-  "description": "Chrome extension that finds the gaps in your calendar and protects them as breaks.",
+  "description": "Plans breaks into the real gaps in your day. Compression burnout, Claude Code Impact Lab Dublin.",
   "scripts": {
-    "test": "TZ=Europe/Dublin node --test tests/*.test.mjs && node app/tests/run.js"
+    "setup": "npm --prefix web ci",
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "test": "node breathing-room/tests/run.js"
   }
 }

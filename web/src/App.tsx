@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import sample from './sample-plan.json'
 import {
   type BreakType,
@@ -11,6 +11,7 @@ import {
   toHHMM,
   toMin,
 } from './plan'
+import { ROOM_URL, dayFromRoom, importCalendar } from './room'
 
 type Mode = 'booked' | 'margin'
 
@@ -116,15 +117,41 @@ function plural(n: number, word: string) {
 }
 
 export default function App() {
-  const [day, setDay] = useState<DayPlan>(() => parseDayPlan(sample))
-  const [source, setSource] = useState('Sample day')
+  const [day, setDay] = useState<DayPlan>(() => dayFromRoom()?.day ?? parseDayPlan(sample))
+  const [source, setSource] = useState(() => dayFromRoom()?.label ?? 'Sample day')
   const [error, setError] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>('booked')
   const fileInput = useRef<HTMLInputElement>(null)
 
+  // Pick up changes made in the break room (energy, meetings added by hand) when you come back.
+  useEffect(() => {
+    const sync = () => {
+      const fromRoom = dayFromRoom()
+      if (fromRoom) {
+        setDay(fromRoom.day)
+        setSource(fromRoom.label)
+      }
+    }
+    window.addEventListener('focus', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('focus', sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
+
   async function openFile(file: File) {
     try {
-      setDay(parseDayPlan(JSON.parse(await file.text())))
+      const text = await file.text()
+      if (/\.ics$/i.test(file.name) || text.trimStart().startsWith('BEGIN:VCALENDAR')) {
+        const { day: imported, found, skippedAllDay } = importCalendar(text)
+        setDay(imported)
+        setSource(`${file.name}: ${plural(found, 'meeting')} today${skippedAllDay ? `, ${skippedAllDay} all-day skipped` : ''}`)
+        setError(found ? null : `${file.name} has no meetings today. Showing an empty day.`)
+        setMode('margin')
+        return
+      }
+      setDay(parseDayPlan(JSON.parse(text)))
       setSource(file.name)
       setError(null)
       setMode('booked')
@@ -148,7 +175,7 @@ export default function App() {
   let sub: string
   if (!isMargin) {
     if (booked.problems.length) {
-      headline = `Your day has no margin from ${range(booked.problems[0])}.`
+      headline = `Your day has no breathing room from ${range(booked.problems[0])}.`
       sub =
         booked.problems.length > 1
           ? `And ${plural(booked.problems.length - 1, 'more stretch')} like it. ${plural(booked.meetings, 'meeting')}, ${formatDuration(booked.meetingMinutes)} booked.`
@@ -158,11 +185,11 @@ export default function App() {
       sub = 'No stretch runs past two hours, but nothing is planned in between yet.'
     } else {
       headline = 'Nothing booked today.'
-      sub = 'Open a plan file to see a real day.'
+      sub = 'Import your calendar to see your real day.'
     }
   } else {
     headline = withMargin.breaks
-      ? `Margin found ${plural(withMargin.breaks, 'break')}, ${formatDuration(withMargin.breakMinutes)} back for you.`
+      ? `Breathing Room found ${plural(withMargin.breaks, 'break')}, ${formatDuration(withMargin.breakMinutes)} back for you.`
       : 'There was no room for a break today.'
     sub = withMargin.problems.length
       ? `${withMargin.problems.map(range).join(' and ')} still has no gap. That one needs a meeting moved.`
@@ -172,7 +199,7 @@ export default function App() {
   return (
     <main className={`page mode-${mode}`}>
       <header className="masthead">
-        <span className="wordmark">Margin</span>
+        <span className="wordmark">Breathing Room</span>
         <span className="date">{longDate(day.date)}</span>
       </header>
 
@@ -186,7 +213,7 @@ export default function App() {
           As booked
         </button>
         <button type="button" role="radio" aria-checked={isMargin} onClick={() => setMode('margin')}>
-          With Margin
+          With breaks
         </button>
         <span className="thumb" aria-hidden="true" />
       </div>
@@ -208,7 +235,7 @@ export default function App() {
               >
                 {problem && (
                   <p className="flag">
-                    {formatDuration(problem.end - problem.start)} with no margin
+                    {formatDuration(problem.end - problem.start)} with no breathing room
                   </p>
                 )}
                 <div className="slot-inner">
@@ -240,15 +267,23 @@ export default function App() {
         </ol>
       )}
 
+      <section className="cta">
+        <div>
+          <p className="title">Ready for today?</p>
+          <p className="note">The break room reminds you once, quietly, when each break comes round, and never during a meeting.</p>
+        </div>
+        <a className="cta-button" href={ROOM_URL}>Start my day</a>
+      </section>
+
       <footer className="source">
         <span>Showing: {source}</span>
         <button type="button" onClick={() => fileInput.current?.click()}>
-          Open a plan file
+          Import your calendar (.ics)
         </button>
         <input
           ref={fileInput}
           type="file"
-          accept=".json,application/json"
+          accept=".ics,text/calendar,.json,application/json"
           hidden
           onChange={(e) => {
             const f = e.target.files?.[0]

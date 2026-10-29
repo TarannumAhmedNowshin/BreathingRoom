@@ -1,53 +1,72 @@
-# Margin
-*Puts the space back in your day.*
+# Breathing Room
+**Breaks planned around your real day.**
 
-AI makes each task faster, so we take on more of them. The breaks between tasks go first, then the evenings. That's **compression burnout**.
+**Live site:** https://tarannumahmednowshin.github.io/Margin/  (no install, no sign-in)
 
-**Margin** is a Chrome extension for people whose calendars are back-to-back: knowledge workers, students, and first-jobbers. It reads your real calendar, finds the gaps, and protects them as breaks: lunch, water, a walk, a breather. **It never nudges you mid-meeting.** When your day has no gaps at all, it says so: the calendar is the problem, not you.
+## The problem: compression burnout
+AI makes each task faster, so we take on more of them. The breaks between tasks go first, then the evenings. People go from 10:00 to 13:00 without standing up, eat lunch at their desk, and finish the day with no clear stop.
 
-> Built at the Claude Code Impact Lab, Dublin, 29 Oct 2026. Brief: compression burnout. Idea: *workload tracker*.
+Most wellbeing tools make this worse: another app to check, more nudges, another streak to keep. Breathing Room takes the calendar you already have and protects time for you inside it.
 
-## Install (2 minutes)
+## Who it's for
+People whose day is run by meetings and screens: knowledge workers, team leads, developers, teachers, students and first-jobbers. In other words, anyone who looks up at 15:00 and realises they haven't had water since 9.
 
-1. Download this repo: **Code → Download ZIP**, then unzip it (or `git clone https://github.com/TarannumAhmedNowshin/Margin`).
-2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and choose the `Margin` folder.
-3. A welcome page opens. Enter your name and workday, and you'll see a plan for a sample overloaded day.
-
-## Connect your real calendar
-
-Open the dashboard → **Settings → Calendar link**:
-
-- **Google Calendar:** Settings → your calendar → *Integrate calendar* → copy **Secret address in iCal format**.
-- **Outlook:** Settings → Calendar → Shared calendars → Publish → copy the ICS link.
-- **Any calendar:** export an `.ics` file and upload it.
-
-## Try it without installing
-
-The break room also runs as a plain website: open `app/index.html`, or the live site at **https://tarannumahmednowshin.github.io/Margin/app/**. Import an `.ics` file, or use the example day.
-
-## Optional
-
-- **Claude API key** (Settings → Claude): break ideas written to fit the exact minutes you have. Without a key, Margin uses its built-in ideas.
-- **Slack user token / Discord webhook:** sets "☕ On a break, back at 13:40" when you take a break.
-- **Low-stimulation mode:** calm colours, no streaks, larger buttons.
-
-## How it gives time back
-
-- Breaks go **only into real gaps** in your calendar. If a meeting is running, the nudge waits.
-- Escalation is gentle (badge → one notification → an optional 8-second screen dim) and can be turned off.
-- Every break you take is logged under **Time back**, so you can see where the minutes went.
-
-## Tests
-
-```bash
-npm test
-```
-This needs Node 18+ and nothing else. The tests cover recurring meetings, moved and cancelled instances, time zones, summer time, and that no break is ever planned inside a meeting.
+It fits the event's **"A workload tracker"** idea. It shows how much you're juggling from your calendar, then goes one step further and plans the breaks for you.
 
 ## How it works
+1. **See your day as booked.** Import your calendar (`.ics`). The overview shows every stretch with no rest in it, for example *"Your day has no breathing room from 10:00 to 13:00."*
+2. **Switch to "With breaks".** Water, movement, lunch and an end-of-day shutdown are placed only in the real gaps between meetings, never on top of one.
+3. **Start my day.** The break room reminds you **once, quietly**, when each break comes round, and waits if a meeting runs over. *Start break* opens a calm full-screen break with a box-breathing guide.
+4. **Put the breaks in your calendar.** One click downloads them as an `.ics` file. They show as busy, so nobody books over them, and your own calendar reminds you, with no app to keep open.
 
-See [PLAN.md](PLAN.md) for features and architecture, and [CONTRACT.md](CONTRACT.md) for data shapes. Everything runs locally in your browser: no server, and your keys never leave your machine.
+## How it gives time back
+- **No setup.** Import once in the morning and the plan is made for you.
+- **One reminder per break, then silence.** It never repeats, escalates or nags.
+- **Never during meetings.** Breaks go only into real gaps.
+- **Shows where the day is broken.** For example: *"2h 45m back-to-back from 10:00. Ask for one meeting to end 5 minutes early."* Fixing one recurring meeting gives you a gap every week.
+- **A clear stop.** A shutdown slot at the end of the day: write tomorrow's top three, then close the laptop.
+- **Counts the time you took back.** The figure grows only when you actually take a break.
 
-## Team
+## Use it
+Open the live site, or run it locally:
 
-_P4: add names._
+```bash
+git clone https://github.com/TarannumAhmedNowshin/Margin.git
+cd Margin
+npm run setup     # installs the dashboard (Node 20+)
+npm run dev       # open the URL it prints
+npm test          # planner + calendar tests
+```
+
+The break room on its own needs no build: open `breathing-room/index.html` in any browser.
+
+### Getting your calendar as an .ics file
+- **Google Calendar:** Settings → Import & export → Export. Unzip it and pick your calendar's `.ics` file.
+- **Outlook (web):** Settings → Calendar → Shared calendars → Publish. Open the ICS link and save the file.
+- **Outlook (desktop):** File → Save Calendar.
+- **Apple Calendar:** File → Export.
+
+No calendar to hand? Use `breathing-room/example.ics`, which works on any day.
+
+## Project structure
+| Path | What |
+|---|---|
+| `web/` | Day overview (React + Vite): "As booked / With breaks", calendar import, *Start my day* |
+| `web/src/room.ts` | Connects the overview to the break room. They share one calendar and plan in the browser. |
+| `breathing-room/` | Break room (plain HTML/JS): reminders, energy check-in, break mode, add breaks to your calendar, settings |
+| `breathing-room/planner.js` | Plans breaks around meetings (pure function, tested) |
+| `breathing-room/ics.js` | Reads `.ics` files: repeating meetings, exceptions, cancellations |
+| `breathing-room/tests/` | `npm test` |
+| `.github/workflows/pages.yml` | Tests, builds and deploys the live site on every push |
+
+The build serves the break room at `/room/` beside the overview, so it's one site with shared local storage.
+
+## Privacy
+Everything runs in your browser. Your calendar file is read locally and never uploaded. There's no sign-in, no server, and no access to your calendar account. Settings → *Clear all my data* removes everything.
+
+## What's next
+- Live Google Calendar and Outlook connection, so there's no export step.
+- Set Slack or Discord status to "on a break" when a break starts.
+- Claude-written break ideas matched to the exact minutes you have.
+
+Built in three hours at the **Claude Code Impact Lab, Dublin** (29 Oct 2026), for the compression burnout brief.
