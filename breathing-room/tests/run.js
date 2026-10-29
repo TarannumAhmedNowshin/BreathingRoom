@@ -85,4 +85,17 @@ test('ics handles weekly rules, exdates, cancellations and folded lines', () => 
   assert.strictEqual(wed.events.length, 0);
 });
 
+test('exported breaks round-trip through the calendar reader, with reminders', () => {
+  const plan = P.buildPlan(day, { dayStart: '09:00', dayEnd: '17:30' });
+  const d = new Date(2026, 9, 29);
+  const ics = ICS.build(plan.breaks, d, { alarmMinutes: 2 });
+  assert(ics.includes('TRIGGER:-PT2M'));
+  assert.strictEqual((ics.match(/BEGIN:VALARM/g) || []).length, plan.breaks.length);
+  const back = ICS.parse(ics, d).events;
+  assert.deepStrictEqual(back.map((e) => e.start), plan.breaks.map((b) => b.start));
+  const silent = ICS.build(plan.breaks, d, { alarmMinutes: null });
+  assert(!silent.includes('VALARM'));
+  assert(ICS.build(plan.breaks, d, {}).includes('TRIGGER:PT0M'));
+});
+
 console.log(`\n${passed} tests passed`);

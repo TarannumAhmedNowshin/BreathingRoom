@@ -45,7 +45,7 @@
     events: EXAMPLE.map((e) => ({ ...e })),
     eventsDate: dateKey(),
     isExample: true,
-    settings: { dayStart: '09:00', dayEnd: '17:30', sound: false, notify: false },
+    settings: { dayStart: '09:00', dayEnd: '17:30', sound: false, notify: false, alarm: '0' },
     day: freshDay(),
     pausedUntil: 0,
   });
@@ -689,40 +689,67 @@
   }
 
   /* ---------- Export breaks as a calendar file ---------- */
-  function breaksIcs() {
-    const d = new Date();
-    const ymd = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
-    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-    const at = (min) => `${ymd}T${pad(Math.floor(min / 60))}${pad(Math.round(min % 60))}00`;
-    const text = (t) => String(t).replace(/\\/g, '\\\\').replace(/[,;]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
-    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Breathing Room//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
-    for (const b of plan.breaks) {
-      lines.push('BEGIN:VEVENT',
-        `UID:${b.id}-${ymd}@breathing-room`,
-        `DTSTAMP:${stamp}`,
-        `DTSTART:${at(b.s)}`,
-        `DTEND:${at(b.s + b.len)}`,
-        `SUMMARY:${text(b.title)}`,
-        `DESCRIPTION:${text(b.idea + ' (planned by Breathing Room)')}`,
-        'TRANSP:OPAQUE',
-        'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${text(b.title)}`, 'TRIGGER:PT0M', 'END:VALARM',
-        'END:VEVENT');
-    }
-    lines.push('END:VCALENDAR');
-    return lines.join('\r\n') + '\r\n';
+  // Breaks still to come or not skipped, at their current (possibly moved) times.
+  function exportableBreaks() {
+    return plan.breaks
+      .filter((b) => !state.day.skipped[b.id])
+      .map((b) => ({ ...b, s: effStart(b) }));
   }
-  $('#export-ics').addEventListener('click', () => {
-    const status = $('#export-status');
-    if (state.isExample) { status.className = 'small status error'; status.textContent = 'This is the example day. Import your calendar or add a meeting first, then add your own breaks.'; return; }
-    if (!plan.breaks.length) { status.className = 'small status error'; status.textContent = 'There are no breaks to add today.'; return; }
-    const blob = new Blob([breaksIcs()], { type: 'text/calendar' });
+  function breaksIcs() {
+    const a = state.settings.alarm;
+    return ICS.build(exportableBreaks(), new Date(), { alarmMinutes: a === 'none' ? null : +(a || 0) });
+  }
+
+  const ua = navigator.userAgent || '';
+  const DEVICE = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)
+    ? 'ios' : /Android/i.test(ua) ? 'android' : 'desktop';
+
+  function downloadIcs(name, ics) {
+    const blob = new Blob([ics], { type: 'text/calendar' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `breaks-${dateKey()}.ics`;
+    a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+
+  $('#alarm-select').value = state.settings.alarm || '0';
+  $('#alarm-select').addEventListener('change', (ev) => { state.settings.alarm = ev.target.value; save(); });
+
+  $('#export-ics').addEventListener('click', async () => {
+    const status = $('#export-status');
+    if (state.isExample) { status.className = 'small status error'; status.textContent = 'This is the example day. Import your calendar or add a meeting first, then add your own breaks.'; return; }
+    const list = exportableBreaks();
+    if (!list.length) { status.className = 'small status error'; status.textContent = 'There are no breaks to add today.'; return; }
+    const ics = breaksIcs();
+    const name = `breaks-${dateKey()}.ics`;
+    const count = `${list.length} break${list.length === 1 ? '' : 's'}`;
+    const reminder = state.settings.alarm === 'none' ? 'no reminders' : state.settings.alarm && state.settings.alarm !== '0' ? `a reminder ${state.settings.alarm} minutes before each one` : 'a reminder as each one starts';
     status.className = 'small status';
-    status.textContent = `Saved ${plan.breaks.length} break${plan.breaks.length === 1 ? '' : 's'} as breaks-${dateKey()}.ics. Open it to add them to your calendar.`;
+
+    if (DEVICE === 'ios') {
+      // Safari saves the file to Downloads; opening it shows a calendar preview with "Add All".
+      downloadIcs(name, ics);
+      status.textContent = `Saved ${count} as ${name}, with ${reminder}. Tap the download arrow in Safari's address bar, open the file and tap "Add All". Your iPhone and Apple Watch will remind you, even with this page closed.`;
+      return;
+    }
+    if (DEVICE === 'android') {
+      try {
+        const file = new File([ics], name, { type: 'text/calendar' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: "Today's breaks" });
+          status.textContent = `Shared ${count}, with ${reminder}. Choose your calendar app to add them; your phone and watch will remind you.`;
+          return;
+        }
+      } catch (e) {
+        if (e && e.name === 'AbortError') { status.textContent = 'Nothing was added.'; return; }
+      }
+      downloadIcs(name, ics);
+      status.textContent = `Saved ${count} as ${name}, with ${reminder}. Open it from your notifications to add it to your calendar. If your phone can't open it, import it at calendar.google.com (Settings → Import & export) and it will sync to your phone and watch.`;
+      return;
+    }
+    downloadIcs(name, ics);
+    status.textContent = `Saved ${count} as ${name}, with ${reminder}. Double-click it to add it to Outlook or Apple Calendar, or import it at calendar.google.com (Settings → Import & export). It syncs to your phone, so your phone and watch remind you too.`;
   });
 
   /* ---------- Public API for teammates (calendar / planner integrations) ---------- */

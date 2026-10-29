@@ -137,7 +137,47 @@
     return { events, total: raw.length, skippedAllDay };
   }
 
-  const api = { parse, parseDate, occursOn };
+  /**
+   * build(breaks, day, opts) -> .ics text for today's breaks, ready for any calendar app.
+   * breaks: [{ id, s, len, title, idea }] (s = minutes after midnight)
+   * opts:   { alarmMinutes: 0 | 2 | 5 | null }  null = no reminder
+   * Times are written as local "floating" times, so 14:30 stays 14:30 on the person's device.
+   * UIDs are stable per break and day, so re-importing updates breaks instead of duplicating them.
+   */
+  function build(breaks, day, opts) {
+    day = day || new Date();
+    opts = opts || {};
+    const alarm = opts.alarmMinutes === null ? null : Math.max(0, +opts.alarmMinutes || 0);
+    const ymd = `${day.getFullYear()}${pad(day.getMonth() + 1)}${pad(day.getDate())}`;
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const at = (min) => `${ymd}T${pad(Math.floor(min / 60))}${pad(Math.round(min % 60))}00`;
+    const text = (t) => String(t).replace(/\\/g, '\\\\').replace(/[,;]/g, (c) => '\\' + c).replace(/\r?\n/g, '\\n');
+    const lines = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Breathing Room//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'X-WR-CALNAME:Breathing Room breaks',
+    ];
+    for (const b of breaks || []) {
+      lines.push(
+        'BEGIN:VEVENT',
+        `UID:${b.id}-${ymd}@breathing-room`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART:${at(b.s)}`,
+        `DTEND:${at(b.s + b.len)}`,
+        `SUMMARY:${text(b.title)}`,
+        `DESCRIPTION:${text((b.idea || '') + ' (planned by Breathing Room)')}`,
+        'TRANSP:OPAQUE'
+      );
+      if (alarm !== null) {
+        lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${text(b.title)}`,
+          alarm ? `TRIGGER:-PT${alarm}M` : 'TRIGGER:PT0M', 'END:VALARM');
+      }
+      lines.push('END:VEVENT');
+    }
+    lines.push('END:VCALENDAR');
+    return lines.join('\r\n') + '\r\n';
+  }
+
+  const api = { parse, parseDate, occursOn, build };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ICS = api;
 })(typeof window !== 'undefined' ? window : this);

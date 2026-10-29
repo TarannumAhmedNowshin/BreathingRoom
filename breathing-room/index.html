@@ -79,8 +79,15 @@
     <div class="col-side">
       <section class="card protect-card" aria-labelledby="protect-h">
         <h2 id="protect-h">Put the breaks in your calendar</h2>
-        <p class="small">Download today's breaks and import them into Google Calendar or Outlook. They show as busy, so nobody books over them, and your calendar reminds you. No app to keep open.</p>
-        <button class="btn primary" id="export-ics" type="button">Add breaks to my calendar (.ics)</button>
+        <p class="small">Add today's breaks to the calendar on your phone or computer. They show as busy, so nobody books over them, and your calendar reminds you on your phone and watch, even with this page closed.</p>
+        <label for="alarm-select">Remind me</label>
+        <select id="alarm-select" class="select">
+          <option value="0">When each break starts</option>
+          <option value="2">2 minutes before</option>
+          <option value="5">5 minutes before</option>
+          <option value="none">No reminder, just block the time</option>
+        </select>
+        <button class="btn primary" id="export-ics" type="button">Add breaks to my calendar</button>
         <p class="small status" id="export-status" role="status"></p>
       </section>
       <section class="card" aria-labelledby="energy-h">
@@ -117,6 +124,7 @@
             <li><strong>Outlook (desktop):</strong> File → Save Calendar → choose today's date range.</li>
             <li><strong>Outlook (web):</strong> Settings → Calendar → Shared calendars → Publish, then open the ICS link and save it.</li>
             <li><strong>Apple Calendar:</strong> File → Export → Export…</li>
+            <li><strong>On your phone:</strong> phone calendar apps can't export a file. Export once on a computer and email it to yourself, then open this page on your phone and pick the attachment from Files or Downloads. Or add today's meetings by hand below.</li>
           </ul>
           <p>The file is read in your browser. Nothing is uploaded.</p>
         </details>

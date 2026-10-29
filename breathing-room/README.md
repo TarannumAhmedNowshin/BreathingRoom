@@ -51,6 +51,16 @@ To see a reminder immediately: **Settings → Preview a reminder in 5 seconds**.
 - **Outlook (web):** Settings → Calendar → Shared calendars → Publish, open the ICS link and save the file.
 - **Apple Calendar:** File → Export → Export…
 
+### Reminders on your phone and watch
+
+**Put the breaks in your calendar** adds today's breaks to the calendar you already use, with a reminder on each one. Choose when it fires (as the break starts, 2 or 5 minutes before, or no reminder) and press **Add breaks to my calendar**.
+
+- **iPhone:** tap the download arrow in Safari, open the file and tap **Add All**.
+- **Android:** pick your calendar app from the share sheet, or open the downloaded file. If your phone can't open it, import it at calendar.google.com.
+- **Computer:** double-click the file for Outlook or Apple Calendar, or import it at calendar.google.com (Settings → Import & export).
+
+Your phone then reminds you at each break, even with this page closed, and Apple Watch, Wear OS and most Garmin watches show the same reminder. Breaks are marked busy, so nobody books over them. Importing again later updates the same breaks instead of duplicating them, and skipped breaks are left out.
+
 ### Settings
 
 Work hours (default 09:00–17:30), pause reminders for an hour, an optional soft chime, optional desktop notifications, copy today's plan as JSON, and clear all your data.
