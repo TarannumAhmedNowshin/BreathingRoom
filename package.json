@@ -6,6 +6,6 @@
     "setup": "npm --prefix web ci",
     "dev": "npm --prefix web run dev",
     "build": "npm --prefix web run build",
-    "test": "node breathing-room/tests/run.js"
+    "test": "node breathing-room/tests/run.js && node breathing-room/tests/scenarios.js"
   }
 }

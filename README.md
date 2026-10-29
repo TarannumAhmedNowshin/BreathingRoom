@@ -36,7 +36,7 @@ git clone https://github.com/TarannumAhmedNowshin/Margin.git
 cd Margin
 npm run setup     # installs the dashboard (Node 20+)
 npm run dev       # open the URL it prints
-npm test          # planner + calendar tests
+npm test          # planner + calendar tests, plus 5 real-world day scenarios
 ```
 
 The break room on its own needs no build: open `breathing-room/index.html` in any browser.
@@ -58,7 +58,8 @@ No calendar to hand? Use `breathing-room/example.ics`, which works on any day.
 | `breathing-room/` | Break room (plain HTML/JS): reminders, energy check-in, break mode, add breaks to your calendar, settings |
 | `breathing-room/planner.js` | Plans breaks around meetings (pure function, tested) |
 | `breathing-room/ics.js` | Reads `.ics` files: repeating meetings, exceptions, cancellations |
-| `breathing-room/tests/` | `npm test` |
+| `breathing-room/tests/` | `npm test`: planner and calendar tests, plus scenario days (meeting marathon, squeezed lunch, double-booked…) |
+| `calendar-proxy/` | Small serverless function that fetches a live iCal link, since calendar servers block browsers from reading them directly |
 | `.github/workflows/pages.yml` | Tests, builds and deploys the live site on every push |
 
 The build serves the break room at `/room/` beside the overview, so it's one site with shared local storage.
