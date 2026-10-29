@@ -12,6 +12,7 @@ import {
   toMin,
 } from './plan'
 import { ROOM_URL, connectCalendarLink, dayFromRoom, forgetCalendarLink, ideaRequest, importCalendar, savedCalendarLink, takenToday } from './room'
+import { draftRequest, geminiAvailable } from './gemini'
 import { saveApiKey, savedApiKey, storedIdeas, writeIdeas } from './ideas'
 
 type Mode = 'booked' | 'margin'
@@ -130,6 +131,9 @@ function fixFor(day: DayPlan, s: Stretch) {
   const run = formatDuration(s.end - s.start)
   return {
     key: `${s.start}-${pick.title}`,
+    from: toHHMM(pick.end),
+    to: toHHMM(newEnd),
+    run,
     title: pick.title,
     text: `Ask for “${pick.title}” to end at ${toHHMM(newEnd)} instead of ${toHHMM(pick.end)}. That splits ${run} of back-to-back meetings with a 10-minute break.`,
     message: `Hi, could we wrap up "${pick.title}" at ${toHHMM(newEnd)} instead of ${toHHMM(pick.end)} today? I have ${run} of back-to-back meetings and need a short break in between. Thanks!`,
@@ -143,6 +147,8 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('booked')
   const fileInput = useRef<HTMLInputElement>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [drafting, setDrafting] = useState<string | null>(null)
   const [apiKey, setApiKey] = useState(savedApiKey)
   const [claude, setClaude] = useState<{ busy: boolean; msg: string }>(() => ({
     busy: false,
@@ -374,20 +380,34 @@ export default function App() {
               const f = fixFor(day, p)
               return (
                 <li key={f.key}>
-                  <p>{f.text}</p>
+                  <p>
+                    {f.text}
+                    {drafts[f.key] && <span className="draft">{drafts[f.key]}</span>}
+                  </p>
                   <button
                     type="button"
+                    disabled={drafting === f.key}
                     onClick={async () => {
+                      let message = drafts[f.key] ?? f.message
+                      if (!drafts[f.key] && geminiAvailable()) {
+                        setDrafting(f.key)
+                        const ai = await draftRequest({ title: f.title, from: f.from, to: f.to, run: f.run })
+                        setDrafting(null)
+                        if (ai) {
+                          message = ai
+                          setDrafts((d) => ({ ...d, [f.key]: ai }))
+                        }
+                      }
                       try {
-                        await navigator.clipboard.writeText(f.message)
+                        await navigator.clipboard.writeText(message)
                         setCopied(f.key)
                         setTimeout(() => setCopied((c) => (c === f.key ? null : c)), 2500)
                       } catch {
-                        window.prompt('Copy this message:', f.message)
+                        window.prompt('Copy this message:', message)
                       }
                     }}
                   >
-                    {copied === f.key ? 'Copied' : 'Copy request'}
+                    {drafting === f.key ? 'Drafting…' : copied === f.key ? 'Copied' : geminiAvailable() && !drafts[f.key] ? 'Draft with AI' : 'Copy request'}
                   </button>
                 </li>
               )
